@@ -1,0 +1,88 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "HTTP",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#request-line" },
+    { "include": "#headers" },
+    { "include": "#body" },
+    { "include": "#separator" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.http",
+          "match": "^\\s*#.*$"
+        }
+      ]
+    },
+    "request-line": {
+      "patterns": [
+        {
+          "name": "meta.request-line.http",
+          "match": "^\\s*(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\\s+(.+?)\\s*(HTTP/1\\.1)?\\s*$",
+          "captures": {
+            "1": {
+              "name": "keyword.http-method.http"
+            },
+            "2": {
+              "name": "string.unquoted.url.http"
+            },
+            "3": {
+              "name": "constant.numeric.http-version.http"
+            }
+          }
+        }
+      ]
+    },
+    "headers": {
+      "patterns": [
+        {
+          "name": "meta.header.http",
+          "match": "^\\s*([A-Za-z][A-Za-z0-9-]*)\\s*:\\s*(.*)$",
+          "captures": {
+            "1": {
+              "name": "entity.name.tag.http"
+            },
+            "2": {
+              "name": "string.unquoted.http"
+            }
+          }
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.http",
+          "match": "\\{\\{\\s*[A-Za-z_][A-Za-z0-9_]*\\s*\\}\\}"
+        }
+      ]
+    },
+    "body": {
+      "patterns": [
+        {
+          "name": "meta.body.http",
+          "begin": "^\\s*$",
+          "end": "^\\s*(###|---|$)",
+          "patterns": [
+            { "include": "#variables" },
+            {
+              "name": "string.unquoted.http"
+            }
+          ]
+        }
+      ]
+    },
+    "separator": {
+      "patterns": [
+        {
+          "name": "comment.line.separator.http",
+          "match": "^\\s*(###|---)\\s*.*$"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.http"
+}

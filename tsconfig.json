@@ -11,15 +11,16 @@
     "declaration": true,
     "sourceMap": true,
     "outDir": "./out",
-    "rootDir": "./src",
+    "rootDir": "./",
     "moduleResolution": "node",
     "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "typeRoots": ["./node_modules/@types"]
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["jest", "node"]
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "test", "out"]
+  "include": ["src", "test"],
+  "exclude": ["node_modules", "out"]
 }

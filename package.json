@@ -7,7 +7,7 @@
     "vscode": "^1.105.0"
   },
   "categories": ["Other"],
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
   "contributes": {
     "languages": [
       {
@@ -20,6 +20,13 @@
         "id": "rest",
         "filenames": ["*.rest"],
         "aliases": ["REST", "rest"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "http",
+        "scopeName": "source.http",
+        "path": "./syntaxes/http.tmLanguage.json"
       }
     ],
     "commands": [
@@ -56,8 +63,8 @@
     "compile": "tsc -p ./",
     "compile:prod": "webpack --mode production",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix && prettier --write src",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix && prettier --write src",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "pretest": "npm run compile",

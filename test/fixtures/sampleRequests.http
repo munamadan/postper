@@ -1,0 +1,43 @@
+# Simple GET request
+GET https://httpbin.org/get
+Content-Type: application/json
+
+###
+
+# POST request with body
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "name": "John",
+  "email": "john@example.com"
+}
+
+###
+
+# PUT request with variables
+PUT https://{{api_url}}/users/123
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Name"
+}
+
+###
+
+# DELETE request
+DELETE https://httpbin.org/delete
+
+###
+
+# GET with query parameters
+GET https://httpbin.org/get?page=1&limit=10
+
+###
+
+# Request with multiple headers
+GET https://httpbin.org/headers
+Accept: application/json
+User-Agent: HTTP-Client/1.0
+Authorization: Bearer some-token
