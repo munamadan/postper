@@ -55,8 +55,7 @@
   },
   "activationEvents": [
     "onLanguage:http",
-    "onLanguage:rest",
-    "onCommand:http-client.sendRequest"
+    "onLanguage:rest"
   ],
   "scripts": {
     "vscode:prepublish": "npm run compile:prod",
