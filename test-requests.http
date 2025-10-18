@@ -1,30 +1,26 @@
-# Simple GET request
-GET https://httpbin.org/get
+# Simple GET with variable
+GET {{BASE_URL}}/get
 Accept: application/json
 
 ###
 
-# POST with JSON body
-POST https://httpbin.org/post
+# POST with variables in URL and body
+POST {{BASE_URL}}/post
 Content-Type: application/json
+Authorization: Bearer {{AUTH_TOKEN}}
 
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "age": 30
+  "name": "{{TEST_NAME}}",
+  "email": "{{TEST_EMAIL}}"
 }
 
 ###
 
-# Test status codes
-GET https://httpbin.org/status/404
+# Test nested variables
+GET {{API_PROTOCOL}}://{{API_HOST}}/status/200
 
 ###
 
-# Test timeout
-GET https://httpbin.org/delay/5
-
-###
-
-# Test large response
-GET https://httpbin.org/bytes/100000
+# Test variable in headers
+GET {{BASE_URL}}/headers
+X-Custom-Token: {{AUTH_TOKEN}}

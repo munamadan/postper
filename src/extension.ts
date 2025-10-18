@@ -9,6 +9,8 @@ import { httpParser } from './parser/httpParser';
 import { requestValidator } from './parser/requestValidator';
 import { httpClient } from './client/httpClient';
 import { HttpRequest } from './types/common';
+import { environmentManager } from './storage/environmentManager';
+import { envResolver } from './env/envResolver'
 
 let codeLensProvider: HttpCodeLensProvider;
 let fileWatcher: FileWatcher;
@@ -16,7 +18,7 @@ let documentWatcher: DocumentWatcher;
 let statusBar: StatusBar;
 let responsePanel: ResponsePanel;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   logger.info('HTTP Client extension activating...');
 
   try {
@@ -26,6 +28,12 @@ export function activate(context: vscode.ExtensionContext) {
     codeLensProvider = new HttpCodeLensProvider();
     fileWatcher = new FileWatcher();
     documentWatcher = new DocumentWatcher();
+
+    await environmentManager.loadEnvironments();
+    const currentEnv = environmentManager.getCurrentEnvironment();
+    if (currentEnv) {
+      logger.info(`Loaded environment: ${currentEnv.name} with ${currentEnv.variables.size} variables`);
+    }
 
     // Register CodeLens provider
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
@@ -86,18 +94,22 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // Convert to HttpRequest
+                    // Resolve environment variables
+          const currentEnv = environmentManager.getCurrentEnvironment();
+          const resolvedRequest = envResolver.resolveRequest(request, currentEnv);
+
+          // Use resolvedRequest instead of request for HttpRequest creation
           const httpRequest: HttpRequest = {
-            id: request.id,
-            method: request.method,
-            url: request.url,
-            headers: request.headers,
-            body: request.body,
+            id: resolvedRequest.id,
+            method: resolvedRequest.method,
+            url: resolvedRequest.url,
+            headers: resolvedRequest.headers,
+            body: resolvedRequest.body,
             timeout: 30000,
             metadata: {
               fileUri: uri.toString(),
-              lineNumber: request.lineNumber,
-              timestamp: Date.now(),
+              lineNumber: resolvedRequest.lineNumber,
+              timestamp: Date.now()
             },
           };
 
@@ -106,7 +118,6 @@ export function activate(context: vscode.ExtensionContext) {
           responsePanel.displayLoading();
 
           const response = await httpClient.send(httpRequest);
-          responsePanel.displayResponse(response);
 
           statusBar.setActiveRequestCount(0);
           responsePanel.displayResponse(response);
