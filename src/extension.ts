@@ -5,17 +5,20 @@ import { DocumentWatcher } from './utils/documentWatcher';
 import { HttpCodeLensProvider } from './ui/codeLensProvider';
 import { StatusBar } from './ui/statusBar';
 import { ResponsePanel } from './ui/responsePanel';
+import { httpParser } from './parser/httpParser';
+import { requestValidator } from './parser/requestValidator';
+import { httpClient } from './client/httpClient';
+import { HttpRequest } from './types/common';
 
 let codeLensProvider: HttpCodeLensProvider;
 let fileWatcher: FileWatcher;
 let documentWatcher: DocumentWatcher;
 let statusBar: StatusBar;
 let responsePanel: ResponsePanel;
-let _activeTimeout: NodeJS.Timeout | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   logger.info('HTTP Client extension activating...');
-  
+
   try {
     // Initialize UI components
     statusBar = new StatusBar();
@@ -48,25 +51,81 @@ export function activate(context: vscode.ExtensionContext) {
       (uri) => logger.info(`HTTP file deleted: ${uri.fsPath}`)
     );
 
+    // Register commands
     const sendRequestCmd = vscode.commands.registerCommand(
       'http-client.sendRequest',
-      (uri: vscode.Uri, lineNumber: number) => {
-        logger.info(`Send request at line ${lineNumber} in ${uri.fsPath}`);
-        
-        // Clear any existing timeout
-        if (_activeTimeout) {
-          clearTimeout(_activeTimeout);
-        }
-        
-        statusBar.setActiveRequestCount(1);
-        responsePanel.displayLoading();
+      async (uri: vscode.Uri, lineNumber: number) => {
+        try {
+          logger.info(`Send request at line ${lineNumber} in ${uri.fsPath}`);
 
-        // Simulate request
-        _activeTimeout = setTimeout(() => {
+          // Read document
+          const document = await vscode.workspace.openTextDocument(uri);
+          const content = document.getText();
+
+          // Parse requests
+          const parseResult = httpParser.parse(content);
+          if (!parseResult.success) {
+            const errorMsg = parseResult.errors.map((e) => e.message).join(', ');
+            vscode.window.showErrorMessage(`Parse error: ${errorMsg}`);
+            responsePanel.displayError(errorMsg);
+            return;
+          }
+
+          // Find request at the given line
+          const request = parseResult.requests.find((r) => r.lineNumber === lineNumber);
+          if (!request) {
+            vscode.window.showErrorMessage('No request found at this line');
+            return;
+          }
+
+          // Validate request
+          const validationError = requestValidator.validate(request);
+          if (validationError) {
+            vscode.window.showErrorMessage(`Validation error: ${validationError.message}`);
+            responsePanel.displayError(validationError.message);
+            return;
+          }
+
+          // Convert to HttpRequest
+          const httpRequest: HttpRequest = {
+            id: request.id,
+            method: request.method,
+            url: request.url,
+            headers: request.headers,
+            body: request.body,
+            timeout: 30000,
+            metadata: {
+              fileUri: uri.toString(),
+              lineNumber: request.lineNumber,
+              timestamp: Date.now(),
+            },
+          };
+
+          // Execute request
+          statusBar.setActiveRequestCount(1);
+          responsePanel.displayLoading();
+
+          const response = await httpClient.send(httpRequest);
+          responsePanel.displayResponse(response);
+
           statusBar.setActiveRequestCount(0);
-          logger.info('Request completed (placeholder)');
-          _activeTimeout = undefined;
-        }, 2000);
+          responsePanel.displayResponse(response);
+
+          if (response.error) {
+            vscode.window.showWarningMessage(
+              `Request completed with error: ${response.error.userMessage}`
+            );
+          } else {
+            vscode.window.showInformationMessage(
+              `Request completed: ${response.statusCode} ${response.statusText}`
+            );
+          }
+        } catch (error) {
+          statusBar.setActiveRequestCount(0);
+          logger.error(`Failed to execute request: ${error}`);
+          responsePanel.displayError(`Unexpected error: ${error}`);
+          vscode.window.showErrorMessage(`Request failed: ${error}`);
+        }
       }
     );
 
@@ -88,12 +147,9 @@ export function activate(context: vscode.ExtensionContext) {
       }
     );
 
-    const focusResponseCmd = vscode.commands.registerCommand(
-      'http-client.focus',
-      () => {
-        responsePanel.show();
-      }
-    );
+    const focusResponseCmd = vscode.commands.registerCommand('http-client.focus', () => {
+      responsePanel.show();
+    });
 
     // Add all disposables to context
     context.subscriptions.push(

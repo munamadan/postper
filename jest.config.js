@@ -10,9 +10,10 @@ module.exports = {
     '!src/types/**',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '/test/'],
-  globals: {
-    'ts-jest': {
+  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
-    },
+    }],
   },
 };

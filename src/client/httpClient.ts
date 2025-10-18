@@ -42,7 +42,9 @@ export class HttpClient {
         statusCode: response.status,
         statusText: response.statusText,
         headers: responseHeaders,
-        body: Buffer.from(response.data || ''),
+        body: typeof response.data === 'string' 
+          ? Buffer.from(response.data) 
+          : Buffer.from(JSON.stringify(response.data)),
         timings: { total: totalTime },
       };
     } catch (error) {
