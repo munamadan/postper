@@ -14,15 +14,10 @@ export class ResponsePanel {
       return;
     }
 
-    this.panel = vscode.window.createWebviewPanel(
-      this.viewType,
-      this.viewTitle,
-      column,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true,
-      }
-    );
+    this.panel = vscode.window.createWebviewPanel(this.viewType, this.viewTitle, column, {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+    });
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
@@ -126,19 +121,21 @@ export class ResponsePanel {
     const statusColor = this.getStatusColor(response.statusCode);
     const contentType = response.headers.get('content-type') || 'text/plain';
     const bodyText = response.body.toString('utf-8');
-    
+
     // Detect and format body
     const formatType = responseFormatter.detectContentType(contentType);
     const formattedBody = responseFormatter.format(bodyText, formatType);
     const { text: displayBody, truncated } = responseFormatter.truncate(formattedBody);
 
     const headers = Array.from(response.headers.entries())
-      .map(([key, value]) => `
+      .map(
+        ([key, value]) => `
         <tr>
           <td class="header-key">${this.escapeHtml(key)}</td>
           <td class="header-value">${this.escapeHtml(value)}</td>
         </tr>
-      `)
+      `
+      )
       .join('');
 
     const truncationWarning = truncated
@@ -495,6 +492,7 @@ export class ResponsePanel {
   dispose(): void {
     if (this.panel) {
       this.panel.dispose();
+      this.panel = undefined;
     }
   }
 }

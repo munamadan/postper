@@ -33,8 +33,14 @@ export class HttpClient {
 
       const responseHeaders = new Map(Object.entries(response.headers));
 
+      const bodySize = Buffer.byteLength(JSON.stringify(response.data));
+      if (bodySize > 1000000) {
+        // 1MB
+        logger.warn(`Response body exceeds 1MB (${bodySize} bytes), will be truncated for display`);
+      }
+
       logger.info(
-        `Response: ${response.status} ${response.statusText} (${totalTime}ms)`
+        `Response: ${response.status} ${response.statusText} (${totalTime}ms, ${bodySize} bytes)`
       );
 
       return {
@@ -42,9 +48,9 @@ export class HttpClient {
         statusCode: response.status,
         statusText: response.statusText,
         headers: responseHeaders,
-        body: typeof response.data === 'string' 
-          ? Buffer.from(response.data) 
-          : Buffer.from(JSON.stringify(response.data)),
+        body: Buffer.from(
+          typeof response.data === 'string' ? response.data : JSON.stringify(response.data)
+        ),
         timings: { total: totalTime },
       };
     } catch (error) {

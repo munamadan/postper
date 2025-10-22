@@ -1,0 +1,13 @@
+### Test 1
+
+### Test missing env variable
+GET https://httpbin.org/get?token={{API_KEY}}
+
+### 
+
+### Test 2
+
+GET https://httpbin.org/get
+Authorization: Bearer {{API_KEY}}
+
+

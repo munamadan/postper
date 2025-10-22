@@ -1,13 +1,608 @@
-# Simple GET with variable
-GET {{BASE_URL}}/get
-Accept: application/json
+# Comprehensive Test File - Properly Formatted
+# Test all major scenarios with correct syntax
+
+### Test 1: Simple GET request
+GET https://httpbin.org/get
 
 ###
 
-# POST with variables in URL and body
+### Test 2: GET with headers
+GET https://httpbin.org/get
+Accept: application/json
+User-Agent: Test-Client/1.0
+
+###
+
+### Test 3: GET with query parameters
+GET https://httpbin.org/get?page=1&limit=10&sort=desc
+
+###
+
+### Test 4: POST with JSON body
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{"name": "John Doe", "email": "john@example.com"}
+
+###
+
+### Test 5: POST with multiline JSON
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "user": {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "age": 30
+  },
+  "preferences": {
+    "theme": "dark",
+    "notifications": true
+  }
+}
+
+###
+
+### Test 6: PUT request
+PUT https://httpbin.org/put
+Content-Type: application/json
+
+{"id": 123, "status": "updated"}
+
+###
+
+### Test 7: PATCH request
+PATCH https://httpbin.org/patch
+Content-Type: application/json
+
+{"status": "active"}
+
+###
+
+### Test 8: DELETE request
+DELETE https://httpbin.org/delete
+
+###
+
+### Test 9: HEAD request
+HEAD https://httpbin.org/get
+
+###
+
+### Test 10: OPTIONS request
+OPTIONS https://httpbin.org/get
+
+###
+
+### Test 11: Status 200 OK
+GET https://httpbin.org/status/200
+
+###
+
+### Test 12: Status 201 Created
+GET https://httpbin.org/status/201
+
+###
+
+### Test 13: Status 204 No Content
+GET https://httpbin.org/status/204
+
+###
+
+### Test 14: Status 301 Moved Permanently
+GET https://httpbin.org/status/301
+
+###
+
+### Test 15: Status 400 Bad Request
+GET https://httpbin.org/status/400
+
+###
+
+### Test 16: Status 401 Unauthorized
+GET https://httpbin.org/status/401
+
+###
+
+### Test 17: Status 403 Forbidden
+GET https://httpbin.org/status/403
+
+###
+
+### Test 18: Status 404 Not Found
+GET https://httpbin.org/status/404
+
+###
+
+### Test 19: Status 500 Internal Server Error
+GET https://httpbin.org/status/500
+
+###
+
+### Test 20: Status 503 Service Unavailable
+GET https://httpbin.org/status/503
+
+###
+
+### Test 21: Basic Authentication
+GET https://httpbin.org/basic-auth/user/pass
+Authorization: Basic dXNlcjpwYXNz
+
+###
+
+### Test 22: Bearer Token
+GET https://httpbin.org/bearer
+Authorization: Bearer test-token-123456
+
+###
+
+### Test 23: Custom headers
+GET https://httpbin.org/headers
+X-Custom-Header: CustomValue
+X-Request-ID: req-123-abc
+X-API-Version: v1
+
+###
+
+### Test 24: Cookies
+GET https://httpbin.org/cookies
+
+###
+
+### Test 25: Set cookie
+GET https://httpbin.org/cookies/set?session=abc123
+
+###
+
+### Test 26: JSON response
+GET https://httpbin.org/json
+
+###
+
+### Test 27: HTML response
+GET https://httpbin.org/html
+
+###
+
+### Test 28: XML response
+GET https://httpbin.org/xml
+
+###
+
+### Test 29: UTF-8 response
+GET https://httpbin.org/encoding/utf8
+
+###
+
+### Test 30: Gzip compressed response
+GET https://httpbin.org/gzip
+
+###
+
+### Test 31: Deflate compressed response
+GET https://httpbin.org/deflate
+
+###
+
+### Test 32: Delay 1 second
+GET https://httpbin.org/delay/1
+
+###
+
+### Test 33: Delay 2 seconds
+GET https://httpbin.org/delay/2
+
+###
+
+### Test 34: Stream 10 lines
+GET https://httpbin.org/stream/10
+
+###
+
+### Test 35: Bytes 100
+GET https://httpbin.org/bytes/100
+
+###
+
+### Test 36: Bytes 1000
+GET https://httpbin.org/bytes/1000
+
+###
+
+### Test 37: Bytes 10000 (10KB)
+GET https://httpbin.org/bytes/10000
+
+###
+
+### Test 38: UUID endpoint
+GET https://httpbin.org/uuid
+
+###
+
+### Test 39: User agent
+GET https://httpbin.org/user-agent
+
+###
+
+### Test 40: IP address
+GET https://httpbin.org/ip
+
+###
+
+### Test 41: Cache control
+GET https://httpbin.org/cache
+
+###
+
+### Test 42: Cache with value
+GET https://httpbin.org/cache/60
+
+###
+
+### Test 43: ETag
+GET https://httpbin.org/etag/test-etag-123
+
+###
+
+### Test 44: Response headers
+GET https://httpbin.org/response-headers?X-Test=value
+
+###
+
+### Test 45: Redirect 1 time
+GET https://httpbin.org/redirect/1
+
+###
+
+### Test 46: Redirect 3 times
+GET https://httpbin.org/redirect/3
+
+###
+
+### Test 47: Absolute redirect
+GET https://httpbin.org/absolute-redirect/2
+
+###
+
+### Test 48: Relative redirect
+GET https://httpbin.org/relative-redirect/2
+
+###
+
+### Test 49: POST form data
+POST https://httpbin.org/post
+Content-Type: application/x-www-form-urlencoded
+
+username=testuser&password=testpass&remember=true
+
+###
+
+### Test 50: POST plain text
+POST https://httpbin.org/post
+Content-Type: text/plain
+
+This is plain text content
+with multiple lines
+and special characters: !@#$%
+
+###
+
+### Test 51: POST XML
+POST https://httpbin.org/post
+Content-Type: application/xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<request>
+  <user>
+    <name>John Doe</name>
+    <email>john@example.com</email>
+  </user>
+</request>
+
+###
+
+### Test 52: Multiple accept headers
+GET https://httpbin.org/get
+Accept: application/json
+Accept-Language: en-US,en;q=0.9
+Accept-Encoding: gzip, deflate, br
+
+###
+
+### Test 53: Long URL with many params
+GET https://httpbin.org/get?p1=v1&p2=v2&p3=v3&p4=v4&p5=v5&p6=v6&p7=v7&p8=v8&p9=v9&p10=v10
+
+###
+
+### Test 54: Anything endpoint GET
+GET https://httpbin.org/anything
+
+###
+
+### Test 55: Anything endpoint POST
+POST https://httpbin.org/anything
+Content-Type: application/json
+
+{"test": "anything endpoint"}
+
+###
+
+### Test 56: Anything endpoint PUT
+PUT https://httpbin.org/anything
+Content-Type: application/json
+
+{"method": "PUT"}
+
+###
+
+### Test 57: Anything endpoint PATCH
+PATCH https://httpbin.org/anything
+Content-Type: application/json
+
+{"method": "PATCH"}
+
+###
+
+### Test 58: Anything endpoint DELETE
+DELETE https://httpbin.org/anything
+
+###
+
+### Test 59: Base64 decode
+GET https://httpbin.org/base64/SFRUUEJJTiBpcyBhd2Vzb21l
+
+###
+
+### Test 60: Robots.txt
+GET https://httpbin.org/robots.txt
+
+###
+
+### Test 61: Deny endpoint
+GET https://httpbin.org/deny
+
+###
+
+### Test 62: Range endpoint
+GET https://httpbin.org/range/1024
+
+###
+
+### Test 63: Links endpoint
+GET https://httpbin.org/links/5
+
+###
+
+### Test 64: Image JPEG
+GET https://httpbin.org/image/jpeg
+
+###
+
+### Test 65: Image PNG
+GET https://httpbin.org/image/png
+
+###
+
+### Test 66: Image WebP
+GET https://httpbin.org/image/webp
+
+###
+
+### Test 67: Drip endpoint
+GET https://httpbin.org/drip?duration=1&numbytes=10
+
+###
+
+### Test 68: POST with empty body
+POST https://httpbin.org/post
+Content-Type: application/json
+
+###
+
+### Test 69: POST with array
+POST https://httpbin.org/post
+Content-Type: application/json
+
+[1, 2, 3, 4, 5]
+
+###
+
+### Test 70: POST with nested array
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "users": [
+    {"id": 1, "name": "Alice"},
+    {"id": 2, "name": "Bob"},
+    {"id": 3, "name": "Charlie"}
+  ]
+}
+
+###
+
+### Test 71: POST with boolean values
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "active": true,
+  "deleted": false,
+  "verified": true
+}
+
+###
+
+### Test 72: POST with null values
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "name": null,
+  "email": null,
+  "phone": null
+}
+
+###
+
+### Test 73: POST with numbers
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "integer": 42,
+  "float": 3.14,
+  "negative": -100,
+  "zero": 0
+}
+
+###
+
+### Test 74: GET with fragment
+GET https://httpbin.org/get#section1
+
+###
+
+### Test 75: GET with special chars in query
+GET https://httpbin.org/get?message=hello+world&special=%21%40%23
+
+###
+
+### Test 76: Multiple content types
+GET https://httpbin.org/get
+Accept: application/json, text/html, application/xml
+
+###
+
+### Test 77: If-None-Match header
+GET https://httpbin.org/etag/test
+If-None-Match: "test-etag"
+
+###
+
+### Test 78: If-Modified-Since header
+GET https://httpbin.org/cache
+If-Modified-Since: Wed, 21 Oct 2015 07:28:00 GMT
+
+###
+
+### Test 79: Range request
+GET https://httpbin.org/bytes/1000
+Range: bytes=0-499
+
+###
+
+### Test 80: CORS preflight simulation
+OPTIONS https://httpbin.org/get
+Origin: https://example.com
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type
+
+###
+
+### Test 81: Custom method GET with body (invalid but test parser)
+GET https://httpbin.org/get
+
+###
+
+### Test 82: Very long header value
+GET https://httpbin.org/headers
+X-Long-Header: This is a very long header value that contains a lot of text to test how the system handles long headers without issues
+
+###
+
+### Test 83: Header with colon in value
+GET https://httpbin.org/headers
+X-URL: https://example.com:8080/path
+
+###
+
+### Test 84: Multiple Authorization headers
+GET https://httpbin.org/headers
+Authorization: Bearer token1
+
+###
+
+### Test 85: Case-insensitive headers
+GET https://httpbin.org/headers
+content-type: application/json
+Content-Type: text/plain
+
+###
+
+### Test 86: Empty header value
+GET https://httpbin.org/headers
+X-Empty:
+X-Has-Value: value
+
+###
+
+### Test 87: POST with deeply nested JSON
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "level1": {
+    "level2": {
+      "level3": {
+        "level4": {
+          "value": "deep"
+        }
+      }
+    }
+  }
+}
+
+###
+
+### Test 88: POST with special JSON characters
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "quote": "He said \"Hello\"",
+  "newline": "Line1\nLine2",
+  "tab": "Col1\tCol2",
+  "backslash": "C:\\path\\to\\file"
+}
+
+###
+
+### Test 89: POST with unicode
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "emoji": "🎉🚀✨",
+  "chinese": "你好世界",
+  "japanese": "こんにちは"
+}
+
+###
+
+### Test 90: GET with env variables
+GET {{BASE_URL}}/get
+
+###
+
+### Test 91: POST with env in header
+POST {{BASE_URL}}/post
+Authorization: Bearer {{AUTH_TOKEN}}
+Content-Type: application/json
+
+{"test": "env variables"}
+
+###
+
+### Test 92: GET with nested env variables
+GET {{API_PROTOCOL}}://{{API_HOST}}/get
+
+###
+
+### Test 93: POST with env in body
 POST {{BASE_URL}}/post
 Content-Type: application/json
-Authorization: Bearer {{AUTH_TOKEN}}
 
 {
   "name": "{{TEST_NAME}}",
@@ -16,11 +611,57 @@ Authorization: Bearer {{AUTH_TOKEN}}
 
 ###
 
-# Test nested variables
-GET {{API_PROTOCOL}}://{{API_HOST}}/status/200
+### Test 94: Status 418 I'm a teapot
+GET https://httpbin.org/status/418
 
 ###
 
-# Test variable in headers
-GET {{BASE_URL}}/headers
-X-Custom-Token: {{AUTH_TOKEN}}
+### Test 95: Status 429 Too Many Requests
+GET https://httpbin.org/status/429
+
+###
+
+### Test 96: Status 502 Bad Gateway
+GET https://httpbin.org/status/502
+
+###
+
+### Test 97: Multiple separators work fine
+GET https://httpbin.org/get
+
+###
+
+### Test 98: Request after comment
+GET https://httpbin.org/get
+
+###
+
+### Test 99: Complex query string
+GET https://httpbin.org/get?filter[status]=active&filter[role]=admin&sort=-created_at&page=1
+
+###
+
+### Test 100: Final test
+GET https://httpbin.org/get
+X-Test-Number: 100
+X-Final: true
+
+###
+
+### 
+POST https://httpbin.org/post
+   Content-Type: application/json
+   
+   {
+     "emoji": "🎉",
+     "unicode": "Hello 世界",
+     "special": "Test\n\t\"quoted\""
+   }
+
+
+###
+
+###
+
+### Test: Very large response (10MB)
+GET https://httpbin.org/bytes/10000000

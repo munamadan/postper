@@ -10,13 +10,16 @@ import { requestValidator } from './parser/requestValidator';
 import { httpClient } from './client/httpClient';
 import { HttpRequest } from './types/common';
 import { environmentManager } from './storage/environmentManager';
-import { envResolver } from './env/envResolver'
+import { envResolver } from './env/envResolver';
 
 let codeLensProvider: HttpCodeLensProvider;
 let fileWatcher: FileWatcher;
 let documentWatcher: DocumentWatcher;
 let statusBar: StatusBar;
 let responsePanel: ResponsePanel;
+
+// Track active requests so we can avoid showing late responses and allow cancellation
+const activeRequests = new Map<string, { cancelled: boolean; controller?: AbortController }>();
 
 export async function activate(context: vscode.ExtensionContext) {
   logger.info('HTTP Client extension activating...');
@@ -32,7 +35,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await environmentManager.loadEnvironments();
     const currentEnv = environmentManager.getCurrentEnvironment();
     if (currentEnv) {
-      logger.info(`Loaded environment: ${currentEnv.name} with ${currentEnv.variables.size} variables`);
+      logger.info(
+        `Loaded environment: ${currentEnv.name} with ${currentEnv.variables.size} variables`
+      );
     }
 
     // Register CodeLens provider
@@ -50,14 +55,20 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     // Setup file watcher
-    fileWatcher.startWatching(
+    // If the FileWatcher exposes a Disposable from startWatching, capture it and register it.
+    const fileWatcherDisposable = fileWatcher.startWatching(
       (uri) => logger.info(`New HTTP file created: ${uri.fsPath}`),
       (uri) => {
         logger.debug(`HTTP file changed: ${uri.fsPath}`);
         codeLensProvider.notifyDocumentChanged();
       },
       (uri) => logger.info(`HTTP file deleted: ${uri.fsPath}`)
-    );
+    ) as unknown as vscode.Disposable | undefined;
+
+    // startWatching may return void or a Disposable; cast safely and register only when present
+    if (fileWatcherDisposable && typeof (fileWatcherDisposable as any).dispose === 'function') {
+      context.subscriptions.push(fileWatcherDisposable);
+    }
 
     // Register commands
     const sendRequestCmd = vscode.commands.registerCommand(
@@ -74,6 +85,7 @@ export async function activate(context: vscode.ExtensionContext) {
           const parseResult = httpParser.parse(content);
           if (!parseResult.success) {
             const errorMsg = parseResult.errors.map((e) => e.message).join(', ');
+            logger.error(`Parse error: ${errorMsg}`);
             vscode.window.showErrorMessage(`Parse error: ${errorMsg}`);
             responsePanel.displayError(errorMsg);
             return;
@@ -82,6 +94,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // Find request at the given line
           const request = parseResult.requests.find((r) => r.lineNumber === lineNumber);
           if (!request) {
+            logger.error('No request found at this line');
             vscode.window.showErrorMessage('No request found at this line');
             return;
           }
@@ -89,14 +102,24 @@ export async function activate(context: vscode.ExtensionContext) {
           // Validate request
           const validationError = requestValidator.validate(request);
           if (validationError) {
+            logger.error(`Validation error: ${validationError.message}`);
             vscode.window.showErrorMessage(`Validation error: ${validationError.message}`);
             responsePanel.displayError(validationError.message);
             return;
           }
 
-                    // Resolve environment variables
-          const currentEnv = environmentManager.getCurrentEnvironment();
-          const resolvedRequest = envResolver.resolveRequest(request, currentEnv);
+          // Resolve environment variables
+          let resolvedRequest = request;
+          try {
+            const currentEnv = environmentManager.getCurrentEnvironment();
+            resolvedRequest = envResolver.resolveRequest(request, currentEnv);
+          } catch (err) {
+            logger.error(`Environment resolution failed: ${err}`);
+            vscode.window.showErrorMessage(`Failed to resolve environment variables: ${err}`);
+            responsePanel.displayError(`Failed to resolve environment variables: ${err}`);
+            statusBar.setActiveRequestCount(0);
+            return;
+          }
 
           // Use resolvedRequest instead of request for HttpRequest creation
           const httpRequest: HttpRequest = {
@@ -109,9 +132,12 @@ export async function activate(context: vscode.ExtensionContext) {
             metadata: {
               fileUri: uri.toString(),
               lineNumber: resolvedRequest.lineNumber,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             },
           };
+
+          // Track the request so we can ignore late responses and allow cancellation
+          activeRequests.set(httpRequest.id, { cancelled: false });
 
           // Execute request
           statusBar.setActiveRequestCount(1);
@@ -119,7 +145,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const response = await httpClient.send(httpRequest);
 
+          // If the request was cancelled while in-flight, drop the response and don't update UI
+          const tracker = activeRequests.get(httpRequest.id);
+          activeRequests.delete(httpRequest.id);
           statusBar.setActiveRequestCount(0);
+          if (tracker?.cancelled) {
+            logger.info(`Response for request ${httpRequest.id} ignored because it was cancelled`);
+            return;
+          }
+
           responsePanel.displayResponse(response);
 
           if (response.error) {
@@ -140,14 +174,26 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     );
 
-    const cancelRequestCmd = vscode.commands.registerCommand(
-      'http-client.cancelRequest',
-      () => {
-        logger.info('Cancel request command executed');
-        statusBar.setActiveRequestCount(0);
-        statusBar.showError('Request cancelled');
+    const cancelRequestCmd = vscode.commands.registerCommand('http-client.cancelRequest', () => {
+      logger.info('Cancel request command executed');
+
+      // Mark all active requests as cancelled and abort any controllers if present
+      for (const [id, info] of activeRequests.entries()) {
+        info.cancelled = true;
+        if (info.controller) {
+          try {
+            info.controller.abort();
+          } catch (e) {
+            logger.debug(`Failed to abort controller for request ${id}: ${e}`);
+          }
+        }
       }
-    );
+      // Clear tracking and update UI
+      activeRequests.clear();
+      statusBar.setActiveRequestCount(0);
+      statusBar.showError('Request cancelled');
+      responsePanel.displayError('Request cancelled by user');
+    });
 
     const copyAsCurlCmd = vscode.commands.registerCommand(
       'http-client.copyAsCurl',
@@ -187,4 +233,38 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export function deactivate() {
   logger.info('HTTP Client extension deactivating');
+
+  // Abort and clear any in-flight requests
+  for (const [, info] of activeRequests.entries()) {
+    info.cancelled = true;
+    if (info.controller) {
+      try {
+        info.controller.abort();
+      } catch (e) {
+        logger.debug(`Error aborting controller during deactivate: ${e}`);
+      }
+    }
+  }
+  activeRequests.clear();
+
+  // Dispose known disposable-like objects defensively
+  try {
+    if (statusBar && typeof (statusBar as any).dispose === 'function') {
+      (statusBar as any).dispose();
+    }
+    if (responsePanel && typeof (responsePanel as any).dispose === 'function') {
+      (responsePanel as any).dispose();
+    }
+    if (fileWatcher && typeof (fileWatcher as any).dispose === 'function') {
+      (fileWatcher as any).dispose();
+    }
+    if (documentWatcher && typeof (documentWatcher as any).dispose === 'function') {
+      (documentWatcher as any).dispose();
+    }
+    if (codeLensProvider && typeof (codeLensProvider as any).dispose === 'function') {
+      (codeLensProvider as any).dispose();
+    }
+  } catch (e) {
+    logger.error(`Error during deactivate dispose: ${e}`);
+  }
 }

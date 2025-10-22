@@ -77,7 +77,9 @@ export class HttpParser {
           if (!headerResult.success) {
             // Empty line after headers means body starts
             if (line.trim() === '') {
-              currentState = ParserState.READING_BODY;
+              if (currentRequest!.method !== 'GET' && currentRequest!.method !== 'HEAD') {
+                currentState = ParserState.READING_BODY;
+              }
               continue;
             }
             errors.push(headerResult.error);
