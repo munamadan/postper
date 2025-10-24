@@ -212,3 +212,280 @@ X-Request-ID: req-${i}
     expect(elapsed).toBeLessThan(200);
   });
 });
+
+describe('HttpParser - Robustness Improvements', () => {
+  let parser: HttpParser;
+
+  beforeEach(() => {
+    parser = new HttpParser();
+  });
+
+  describe('Multiple Consecutive Separators', () => {
+    test('should handle multiple ### separators', () => {
+      const content = `GET https://example.com/users
+###
+###
+###
+POST https://example.com/users
+Content-Type: application/json
+
+{"name": "John"}`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(2);
+        expect(result.requests[0].method).toBe('GET');
+        expect(result.requests[1].method).toBe('POST');
+      }
+    });
+
+    test('should handle file starting with separators', () => {
+      const content = `###
+---
+###
+GET https://example.com/test`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+      }
+    });
+
+    test('should handle file ending with separators', () => {
+      const content = `GET https://example.com/test
+###
+###
+###`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+      }
+    });
+  });
+
+  describe('Inline Comments', () => {
+    test('should strip inline comments from request line', () => {
+      const content = 'GET https://example.com/users # Fetch all users';
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+        expect(result.requests[0].url).toBe('https://example.com/users');
+      }
+    });
+
+    test('should preserve # in URL fragments', () => {
+      const content = 'GET https://example.com/page#section # Navigate here';
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests[0].url).toBe('https://example.com/page#section');
+      }
+    });
+
+    test('should handle multiple # in comments', () => {
+      const content = 'POST /api/users # Create user ## Important ## Priority';
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests[0].method).toBe('POST');
+        expect(result.requests[0].url).toBe('/api/users');
+      }
+    });
+  });
+
+  describe('Comment Lines', () => {
+    test('should skip # comment lines', () => {
+      const content = `# This is a comment
+GET https://example.com/users
+
+# Comment between sections
+###
+POST https://example.com/users`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(2);
+      }
+    });
+
+    test('should support // style comments', () => {
+      const content = `// JavaScript-style comment
+GET /api/test
+// Another comment`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+      }
+    });
+
+    test('should handle comment-only file', () => {
+      const content = `# This file only has comments
+# No actual requests
+// Maybe a TODO list`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(0);
+      }
+    });
+  });
+
+  describe('Whitespace Tolerance', () => {
+    test('should handle excessive blank lines between sections', () => {
+      const content = `
+
+
+GET https://example.com/users
+
+
+
+Authorization: Bearer token
+
+
+
+`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+        expect(result.requests[0].headers.get('Authorization')).toBe('Bearer token');
+      }
+    });
+
+    test('should trim trailing blank lines from body', () => {
+      const content = `POST /api/users
+Content-Type: application/json
+
+{"name": "John"}
+
+
+
+###
+GET /api/test`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests[0].body).toBe('{"name": "John"}');
+        expect(result.requests[0].body).not.toContain('\n\n\n');
+      }
+    });
+
+    test('should preserve intentional blank lines in body', () => {
+      const content = `POST /api/multiline
+Content-Type: text/plain
+
+Line 1
+
+Line 3 with gap above
+###`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests[0].body).toBe('Line 1\n\nLine 3 with gap above');
+      }
+    });
+  });
+
+  describe('Incomplete Requests', () => {
+    test('should handle file ending mid-request', () => {
+      const content = `GET /api/complete
+###
+POST /api/incomplete
+Content-Type: application/json`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(2);
+        expect(result.requests[1].headers.get('Content-Type')).toBe('application/json');
+        expect(result.requests[1].body).toBeFalsy();
+      }
+    });
+
+    test('should handle request with headers but no body', () => {
+      const content = `POST /api/users
+Content-Type: application/json
+Authorization: Bearer token
+###`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.requests).toHaveLength(1);
+        expect(result.requests[0].body).toBeFalsy();
+      }
+    });
+  });
+
+  describe('Enhanced Error Messages', () => {
+    test('should provide helpful error for invalid method', () => {
+      const content = 'INVALID https://example.com';
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors).toHaveLength(1);
+        expect(result.errors[0].message).toContain('Invalid HTTP method');
+        expect(result.errors[0].message).toContain('GET, POST, PUT');
+      }
+    });
+
+    test('should continue parsing after error', () => {
+      const content = `INVALID https://test.com
+###
+GET https://example.com/valid`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(false);
+      expect(result.requests).toHaveLength(1);
+      expect(result.requests[0].method).toBe('GET');
+      if (!result.success) {
+        expect(result.errors).toHaveLength(1);
+      }
+    });
+
+    test('should provide error for malformed header', () => {
+      const content = `GET https://example.com
+InvalidHeaderNoColon`;
+
+      const result = parser.parse(content);
+
+      expect(result.success).toBe(false);
+      if (result.errors && result.errors.length > 0) {
+        expect(result.errors[0].message).toContain('Invalid header format');
+        expect(result.errors[0].message).toContain('missing colon');
+      }
+    });
+  });
+});

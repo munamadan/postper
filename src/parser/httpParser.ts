@@ -1,3 +1,5 @@
+// src/parser/httpParser.ts - Enhanced version with robustness improvements
+
 import { logger } from '../utils/logger';
 import { HttpMethod } from '../types/common';
 import { ParsedRequest, ParseError, ParseResult } from './types';
@@ -20,11 +22,16 @@ export class HttpParser {
     'OPTIONS',
   ]);
 
-  private static readonly REQUEST_SEPARATORS = /^(\s*###\s*|\s*---\s*)$/;
+  // NEW: Methods that cannot have a request body
+  private static readonly METHODS_WITHOUT_BODY: Set<HttpMethod> = new Set(['GET', 'HEAD']);
+
+  // ENHANCED: More flexible separator detection
+  private static readonly REQUEST_SEPARATORS = /^(\s*(#{3,}|---+)\s*)$/;
 
   parse(content: string): ParseResult {
     try {
-      const lines = content.split('\n');
+      // ENHANCED: Handle Windows CRLF
+      const lines = content.split(/\r?\n/);
       const requests: ParsedRequest[] = [];
       const errors: ParseError[] = [];
 
@@ -37,10 +44,11 @@ export class HttpParser {
         const line = lines[i];
         currentLineNum = i + 1;
 
-        // Check for separator
+        // ENHANCED: Check for separator (handles multiple consecutive separators)
         if (HttpParser.REQUEST_SEPARATORS.test(line)) {
           if (currentRequest && currentRequest.method) {
-            currentRequest.body = bodyLines.join('\n').trim();
+            // ENHANCED: Use new finalizeRequest method
+            this.finalizeRequest(currentRequest, bodyLines);
             requests.push(currentRequest as ParsedRequest);
             currentRequest = null;
             bodyLines = [];
@@ -49,21 +57,28 @@ export class HttpParser {
           continue;
         }
 
-        // Skip empty lines and comments at top level
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) {
-          if (currentState === ParserState.READING_HEADERS && !trimmed) {
-            currentState = ParserState.READING_BODY;
-          }
+
+        // ENHANCED: Skip comment lines (# or //) when not in body
+        if (currentState !== ParserState.READING_BODY && this.isCommentLine(trimmed)) {
+          continue;
+        }
+
+        // Skip empty lines at top level
+        if (currentState === ParserState.READING_REQUEST_LINE && !trimmed) {
           continue;
         }
 
         // Parse request line
         if (currentState === ParserState.READING_REQUEST_LINE) {
+          if (!trimmed) {
+            continue;
+          }
+
           const result = this.parseRequestLine(line, currentLineNum);
           if (!result.success) {
             errors.push(result.error);
-            continue;
+            continue; // ENHANCED: Continue parsing instead of stopping
           }
           currentRequest = result.request;
           currentState = ParserState.READING_HEADERS;
@@ -73,18 +88,26 @@ export class HttpParser {
 
         // Parse headers
         if (currentState === ParserState.READING_HEADERS) {
+          // ENHANCED: Skip comment lines in headers section
+          if (this.isCommentLine(trimmed)) {
+            continue;
+          }
+
+          // Empty line after headers means body starts
+          if (!trimmed) {
+            // ENHANCED: Only transition to body if method allows it
+            if (!HttpParser.METHODS_WITHOUT_BODY.has(currentRequest!.method as HttpMethod)) {
+              currentState = ParserState.READING_BODY;
+            }
+            continue;
+          }
+
           const headerResult = this.parseHeader(line, currentLineNum);
           if (!headerResult.success) {
-            // Empty line after headers means body starts
-            if (line.trim() === '') {
-              if (currentRequest!.method !== 'GET' && currentRequest!.method !== 'HEAD') {
-                currentState = ParserState.READING_BODY;
-              }
-              continue;
-            }
             errors.push(headerResult.error);
             continue;
           }
+
           const { key, value } = headerResult;
           if (!currentRequest!.headers) {
             currentRequest!.headers = new Map();
@@ -93,21 +116,17 @@ export class HttpParser {
           continue;
         }
 
-        // Read body
+        // Read body (everything goes in, including comments and blank lines)
         if (currentState === ParserState.READING_BODY) {
           bodyLines.push(line);
           continue;
         }
       }
 
-      // Don't forget the last request
+      // ENHANCED: Finalize incomplete request at end of file
       if (currentRequest && currentRequest.method) {
-        currentRequest.body = bodyLines.join('\n').trim();
+        this.finalizeRequest(currentRequest, bodyLines);
         requests.push(currentRequest as ParsedRequest);
-      }
-
-      if (errors.length > 0) {
-        return { success: false, errors };
       }
 
       // Assign IDs to requests
@@ -115,28 +134,81 @@ export class HttpParser {
         req.id = `req-${idx + 1}`;
       });
 
-      return { success: true, requests };
+      // ENHANCED: Log errors and return partial results
+      if (errors.length > 0) {
+        logger.error(`Parser encountered ${errors.length} error(s)`);
+        errors.forEach((err) => {
+          logger.error(`  Line ${err.lineNumber}: ${err.message}`);
+        });
+      }
+
+      return {
+        success: errors.length === 0,
+        requests,
+        errors,
+      };
     } catch (error) {
       logger.error(`Parser error: ${error}`);
       return {
         success: false,
-        errors: [{ message: `Unexpected parser error: ${error}`, lineNumber: 0 }],
+        requests: [],
+        errors: [
+          {
+            message: `Unexpected parser error: ${error}`,
+            lineNumber: 0,
+          },
+        ],
       };
     }
   }
 
+  /**
+   * NEW: Finalize request by trimming trailing blank lines from body
+   */
+  private finalizeRequest(request: Partial<ParsedRequest>, bodyLines: string[]): void {
+    if (bodyLines.length > 0) {
+      // Trim trailing empty lines
+      while (bodyLines.length > 0 && bodyLines[bodyLines.length - 1].trim() === '') {
+        bodyLines.pop();
+      }
+
+      if (bodyLines.length > 0) {
+        request.body = bodyLines.join('\n');
+      }
+    }
+  }
+
+  /**
+   * NEW: Check if line is a comment (supports # and //)
+   */
+  private isCommentLine(line: string): boolean {
+    return line.startsWith('#') || line.startsWith('//');
+  }
+
+  /**
+   * ENHANCED: Parse request line with inline comment support
+   */
   private parseRequestLine(
     line: string,
     lineNumber: number
   ): { success: true; request: Partial<ParsedRequest> } | { success: false; error: ParseError } {
     const trimmed = line.trim();
-    const parts = trimmed.split(/\s+/);
+
+    // ENHANCED: Remove inline comments (anything after # on request line)
+    // But preserve # in URLs (like fragments)
+    let cleanLine = trimmed;
+    const commentIndex = trimmed.indexOf(' #');
+    if (commentIndex !== -1) {
+      cleanLine = trimmed.substring(0, commentIndex).trim();
+    }
+
+    const parts = cleanLine.split(/\s+/);
 
     if (parts.length < 2) {
       return {
         success: false,
         error: {
-          message: 'Invalid request line. Expected: METHOD URL',
+          message: `Invalid request line: expected "METHOD URL", got "${cleanLine}"`,
           lineNumber,
         },
       };
@@ -149,7 +221,7 @@ export class HttpParser {
       return {
         success: false,
         error: {
-          message: `Invalid HTTP method: ${method}. Expected one of: ${Array.from(
+          message: `Invalid HTTP method: "${method}". Must be one of: ${Array.from(
             HttpParser.HTTP_METHODS
           ).join(', ')}`,
           lineNumber,
@@ -161,7 +233,7 @@ export class HttpParser {
       return {
         success: false,
         error: {
-          message: `Invalid URL: ${url}. Expected absolute URL (e.g., https://example.com)`,
+          message: `Invalid URL format: "${url}". Must start with http://, https://, or /`,
           lineNumber,
         },
       };
@@ -188,7 +260,7 @@ export class HttpParser {
       return {
         success: false,
         error: {
-          message: 'Invalid header format. Expected: Key: Value',
+          message: `Invalid header format at line ${lineNumber}: missing colon. Expected "Key: Value"`,
           lineNumber,
         },
       };
@@ -201,7 +273,7 @@ export class HttpParser {
       return {
         success: false,
         error: {
-          message: 'Header key cannot be empty',
+          message: `Invalid header at line ${lineNumber}: empty header name`,
           lineNumber,
         },
       };
@@ -210,15 +282,25 @@ export class HttpParser {
     return { success: true, key, value };
   }
 
+  /**
+   * ENHANCED: More flexible URL validation
+   */
   private isValidUrl(url: string): boolean {
+    // Allow variable placeholders
+    if (url.includes('{{')) {
+      return true;
+    }
+
+    // Allow relative paths
+    if (url.startsWith('/')) {
+      return true;
+    }
+
+    // Try parsing as absolute URL
     try {
       new URL(url);
       return true;
     } catch {
-      // Check if it might be a variable or needs env resolution
-      if (url.includes('{{')) {
-        return true;
-      }
       return false;
     }
   }

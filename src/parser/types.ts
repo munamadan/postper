@@ -16,5 +16,5 @@ export interface ParseError {
 }
 
 export type ParseResult =
-  | { success: true; requests: ParsedRequest[] }
-  | { success: false; errors: ParseError[] };
+  | { success: true; requests: ParsedRequest[]; errors?: ParseError[] }
+  | { success: false; requests: ParsedRequest[]; errors: ParseError[] };
