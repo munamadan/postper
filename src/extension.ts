@@ -121,6 +121,9 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
+          const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+          logger.info(`Extension workspace root: ${wsRoot}`);
+
           // Use resolvedRequest instead of request for HttpRequest creation
           const httpRequest: HttpRequest = {
             id: resolvedRequest.id,
@@ -128,6 +131,7 @@ export async function activate(context: vscode.ExtensionContext) {
             url: resolvedRequest.url,
             headers: resolvedRequest.headers,
             body: resolvedRequest.body,
+            workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
             timeout: 30000,
             metadata: {
               fileUri: uri.toString(),

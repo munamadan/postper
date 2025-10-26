@@ -6,20 +6,34 @@
   "engines": {
     "vscode": "^1.105.0"
   },
-  "categories": ["Other"],
+  "categories": [
+    "Other"
+  ],
   "main": "./out/src/extension.js",
   "contributes": {
     "languages": [
       {
         "id": "http",
-        "filenames": ["*.http"],
-        "filenamePatterns": ["*.http"],
-        "aliases": ["HTTP", "http"]
+        "filenames": [
+          "*.http"
+        ],
+        "filenamePatterns": [
+          "*.http"
+        ],
+        "aliases": [
+          "HTTP",
+          "http"
+        ]
       },
       {
         "id": "rest",
-        "filenames": ["*.rest"],
-        "aliases": ["REST", "rest"]
+        "filenames": [
+          "*.rest"
+        ],
+        "aliases": [
+          "REST",
+          "rest"
+        ]
       }
     ],
     "grammars": [
@@ -71,6 +85,7 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
+    "@types/form-data": "^2.2.1",
     "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.20",
@@ -90,6 +105,7 @@
   },
   "dependencies": {
     "axios": "^1.12.2",
-    "dotenv": "^16.6.1"
+    "dotenv": "^16.6.1",
+    "form-data": "^4.0.4"
   }
 }

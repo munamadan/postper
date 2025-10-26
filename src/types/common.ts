@@ -8,6 +8,7 @@ export interface HttpRequest {
   readonly body?: string;
   readonly timeout: number;
   readonly metadata: RequestMetadata;
+  readonly workspaceRoot?: string;
 }
 
 export interface RequestMetadata {
