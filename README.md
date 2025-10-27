@@ -1,71 +1,388 @@
-# vscode-http-client README
+# POSTPER
 
-This is the README for your extension "vscode-http-client". After writing up a brief description, we recommend including the following sections.
+Execute HTTP requests directly from `.http` files in Visual Studio Code. A lightweight, text-based alternative to Postman with support for environment variables, request chaining, and file uploads.
 
-## Features
+## ✨ Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- 📝 **Text-based HTTP requests** - Write requests in simple `.http` files
+- 🔗 **Request chaining** - Use responses from previous requests
+- 🌍 **Environment variables** - Switch between dev/prod/test environments
+- 📤 **File uploads** - Support for multipart/form-data
+- 🎨 **Syntax highlighting** - Beautiful HTTP syntax coloring
+- 💾 **Version control friendly** - Plain text files work with Git
+- 🚀 **Fast and lightweight** - No heavy GUI, just your editor
 
-For example if there is an image subfolder under your extension project workspace:
+## 📦 Installation
 
-\!\[feature X\]\(images/feature-x.png\)
+1. Open VS Code
+2. Press `Ctrl+P` (or `Cmd+P` on Mac)
+3. Type: `ext install dipankharel.postper`
+4. Press Enter
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+Or search for "POSTPER" in the Extensions view (`Ctrl+Shift+X`).
 
-## Requirements
+## 🚀 Quick Start
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+### 1. Create a `.http` file
 
-## Extension Settings
+Create a file named `api-tests.http`:
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+\`\`\`http
+### Simple GET request
+GET https://api.github.com/users/dipankharel
 
-For example:
+###
 
-This extension contributes the following settings:
+### POST request with JSON body
+POST https://httpbin.org/post
+Content-Type: application/json
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+{
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+\`\`\`
 
-## Known Issues
+### 2. Send the request
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+Click the **"Send Request"** button that appears above each request, or:
+- Right-click → "POSTPER: Send Request"
+- Command Palette (`Ctrl+Shift+P`) → "POSTPER: Send Request"
 
-## Release Notes
+### 3. View the response
 
-Users appreciate release notes as you update your extension.
+The response appears in a side panel showing:
+- Status code and response time
+- Headers
+- Formatted body (JSON, XML, HTML, etc.)
 
-### 1.0.0
+## 📖 Usage Guide
 
-Initial release of ...
+### Basic Request Format
 
-### 1.0.1
+\`\`\`http
+METHOD URL
+Header-Name: Header-Value
 
-Fixed issue #.
+Request Body (optional)
+\`\`\`
 
-### 1.1.0
+### HTTP Methods
 
-Added features X, Y, and Z.
+Supports all standard HTTP methods:
+
+\`\`\`http
+GET https://api.example.com/users
+POST https://api.example.com/users
+PUT https://api.example.com/users/123
+PATCH https://api.example.com/users/123
+DELETE https://api.example.com/users/123
+HEAD https://api.example.com/users
+OPTIONS https://api.example.com/users
+\`\`\`
+
+### Request Separators
+
+Use `###` or `---` to separate multiple requests:
+
+\`\`\`http
+GET https://api.example.com/users
+###
+POST https://api.example.com/users
+---
+DELETE https://api.example.com/users/123
+\`\`\`
+
+### Headers
+
+\`\`\`http
+GET https://api.example.com/protected
+Authorization: Bearer your-token-here
+Content-Type: application/json
+X-Custom-Header: custom-value
+\`\`\`
+
+### Request Body
+
+Body is separated from headers by a blank line:
+
+\`\`\`http
+POST https://api.example.com/users
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "role": "admin"
+}
+\`\`\`
+
+### Comments
+
+Add comments to document your requests:
+
+\`\`\`http
+# This is a comment
+GET https://api.example.com/users # Inline comment
+
+// JavaScript-style comments also work
+POST https://api.example.com/users
+\`\`\`
+
+## 🌍 Environment Variables
+
+### Create Environment Files
+
+Create `.env` files in your workspace:
+
+**.env** (default):
+\`\`\`
+BASE_URL=http://localhost:3000
+API_KEY=dev-key-12345
+\`\`\`
+
+**.env.production**:
+\`\`\`
+BASE_URL=https://api.production.com
+API_KEY=prod-key-67890
+\`\`\`
+
+### Use Variables
+
+Reference variables with `{{variable}}` syntax:
+
+\`\`\`http
+GET {{BASE_URL}}/api/users
+Authorization: Bearer {{API_KEY}}
+\`\`\`
+
+### Supported Environment Files
+
+- `.env` - Default environment
+- `.env.local` - Local overrides
+- `.env.development` - Development environment
+- `.env.production` - Production environment
+- `.env.test` - Testing environment
+
+## 🔗 Request Chaining
+
+Save responses and use them in subsequent requests:
+
+\`\`\`http
+### Step 1: Login and save response
+# @name login
+POST {{BASE_URL}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "secret"
+}
+
+###
+
+### Step 2: Use token from login
+GET {{BASE_URL}}/protected
+Authorization: Bearer {{login.response.body.token}}
+
+###
+
+### Step 3: Create resource with user info
+POST {{BASE_URL}}/resources
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "name": "New Resource",
+  "owner_id": "{{login.response.body.user.id}}"
+}
+\`\`\`
+
+### Accessing Response Data
+
+- **Body property:** `{{name.response.body.property}}`
+- **Nested property:** `{{name.response.body.user.id}}`
+- **Array element:** `{{name.response.body.items[0].name}}`
+- **Header:** `{{name.response.headers.contenttype}}`
+- **Status code:** `{{name.response.status}}`
+
+### Clear Saved Responses
+
+Command: **POSTPER: Clear Response Chain** (`Ctrl+Shift+P`)
+
+## 📤 File Uploads
+
+Upload files using multipart/form-data:
+
+\`\`\`http
+POST {{BASE_URL}}/upload
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="title"
+
+My Document
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="document.pdf"
+Content-Type: application/pdf
+
+< ./path/to/document.pdf
+------WebKitFormBoundary--
+\`\`\`
+
+**Note:** File paths are relative to your workspace root.
+
+## ⚙️ Configuration
+
+Access settings via: `File` → `Preferences` → `Settings` → Search "POSTPER"
+
+### Available Settings
+
+- **postper.timeout** - Request timeout in milliseconds (default: 30000)
+- **postper.maxRedirects** - Maximum redirects to follow (default: 5)
+
+## 🎯 Commands
+
+Access via Command Palette (`Ctrl+Shift+P`):
+
+- **POSTPER: Send Request** - Execute the HTTP request
+- **POSTPER: Cancel Request** - Cancel ongoing request
+- **POSTPER: Copy as cURL** - Copy request as cURL command
+- **POSTPER: Clear Response Chain** - Clear all saved responses
+
+## 🔥 Tips & Tricks
+
+### Organize Large Files
+
+\`\`\`http
+# ========================================
+# Authentication Endpoints
+# ========================================
+
+### Login
+POST /auth/login
+###
+
+### Logout
+POST /auth/logout
+###
+
+# ========================================
+# User Management
+# ========================================
+
+### Get Users
+GET /api/users
+###
+\`\`\`
+
+### Test Multiple Scenarios
+
+\`\`\`http
+### Valid User (Should succeed)
+POST /api/users
+Content-Type: application/json
+
+{"name": "Valid", "email": "valid@example.com"}
+
+###
+
+### Missing Email (Should fail with 400)
+POST /api/users
+Content-Type: application/json
+
+{"name": "Invalid"}
+
+###
+
+### Duplicate Email (Should fail with 409)
+POST /api/users
+Content-Type: application/json
+
+{"name": "Duplicate", "email": "valid@example.com"}
+\`\`\`
+
+### Multiple Environments
+
+Switch between environments by changing which `.env` file the extension loads:
+
+\`\`\`
+project/
+├── .env              # Default (localhost)
+├── .env.development  # Dev server
+├── .env.production   # Production
+└── api-tests.http
+\`\`\`
+
+## 📝 Examples
+
+Check out the `examples/` folder in the [GitHub repository](https://github.com/dipankharel/postper) for more examples:
+
+- REST API CRUD operations
+- Authentication flows
+- File uploads
+- GraphQL queries
+- WebSocket connections (coming soon)
+
+## 🐛 Known Limitations
+
+- Headers with hyphens in chain variables (use simple names)
+- Binary file downloads (text responses only)
+- WebSocket support (planned for v2.0)
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Built using TypeScript and VS Code Extension API
+
+## 📞 Support
+
+- 🐛 **Report bugs:** [GitHub Issues](https://github.com/dipankharel/postper/issues)
+- 💬 **Discussions:** [GitHub Discussions](https://github.com/dipankharel/postper/discussions)
+- ⭐ **Star on GitHub:** [github.com/dipankharel/postper](https://github.com/dipankharel/postper)
 
 ---
 
-## Following extension guidelines
+**Made by Dipan Kharel**
+\`\`\`
 
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
+---
 
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
+\`\`\`
+MIT License
 
-## Working with Markdown
+Copyright (c) 2025 Dipan Kharel
 
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-## For more information
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+\`\`\`
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+---
