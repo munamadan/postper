@@ -1,39 +1,60 @@
 {
-  "name": "vscode-http-client",
-  "displayName": "vscode-http-client",
-  "description": "Execute HTTP requests directly in Visual Studio Code",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.105.0"
+  "name": "postper",
+  "displayName": "POSTPER",
+  "description": "Execute HTTP Requests from .http files with environment variables and request chaining",
+  "version": "1.0.0",
+  "publisher": "dipankharel",
+  "author": {
+    "name": "Dipan Kharel"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dipankharel/postper"
+  },
+  "bugs": {
+    "url": "https://github.com/dipankharel/postper/issues"
+  },
+  "homepage": "https://github.com/dipankharel/postper#readme",
+  "keywords": [
+    "http",
+    "rest",
+    "api",
+    "client",
+    "postman",
+    "request",
+    "testing",
+    "rest-client",
+    "http-client"
+  ],
   "categories": [
+    "Testing",
     "Other"
   ],
+  "icon": "assets/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
   "main": "./out/src/extension.js",
+  "activationEvents": [
+    "onLanguage:rest"
+  ],
   "contributes": {
     "languages": [
       {
         "id": "http",
-        "filenames": [
-          "*.http"
-        ],
-        "filenamePatterns": [
-          "*.http"
-        ],
-        "aliases": [
-          "HTTP",
-          "http"
-        ]
+        "aliases": ["HTTP", "http"],
+        "extensions": [".http"],
+        "configuration": "./language-configuration.json"
       },
       {
         "id": "rest",
-        "filenames": [
-          "*.rest"
-        ],
-        "aliases": [
-          "REST",
-          "rest"
-        ]
+        "aliases": ["REST", "rest"],
+        "extensions": [".rest"]
       }
     ],
     "grammars": [
@@ -46,43 +67,53 @@
     "commands": [
       {
         "command": "http-client.sendRequest",
-        "title": "HTTP Client: Send Request"
+        "title": "POSTPER: Send Request",
+        "icon": "$(send)"
       },
       {
         "command": "http-client.cancelRequest",
-        "title": "HTTP Client: Cancel Request"
+        "title": "POSTPER: Cancel Request"
       },
       {
         "command": "http-client.copyAsCurl",
-        "title": "HTTP Client: Copy as cURL"
+        "title": "POSTPER: Copy as cURL"
       },
       {
-        
-        "command": "vscode-http-client.clearChain",
-        "title": "HTTP Client: Clear Response Chain"  
+        "command": "http-client.clearChain",
+        "title": "POSTPER: Clear Response Chain"
       }
     ],
     "menus": {
       "editor/context": [
         {
           "command": "http-client.sendRequest",
-          "when": "resourceLangId == http",
-          "group": "1_modification"
+          "when": "resourceLangId == http || resourceLangId == rest",
+          "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "POSTPER",
+      "properties": {
+        "postper.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Request timeout in milliseconds"
+        },
+        "postper.maxRedirects": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum number of redirects to follow"
+        }
+      }
     }
   },
-  "activationEvents": [
-    "onLanguage:http",
-    "onLanguage:rest"
-  ],
   "scripts": {
-    "vscode:prepublish": "npm run compile:prod",
+    "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "compile:prod": "webpack --mode production",
     "watch": "tsc -watch -p ./",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix && prettier --write src",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
     "test": "jest --coverage",
     "test:watch": "jest --watch",
     "pretest": "npm run compile",
@@ -92,9 +123,8 @@
   "devDependencies": {
     "@types/form-data": "^2.2.1",
     "@types/jest": "^29.5.14",
-    "@types/mocha": "^10.0.10",
     "@types/node": "^20.19.20",
-    "@types/vscode": "^1.105.0",
+    "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vscode/test-cli": "^0.0.11",
@@ -103,14 +133,10 @@
     "jest": "^29.7.0",
     "prettier": "^3.6.2",
     "ts-jest": "^29.4.5",
-    "ts-loader": "^9.5.4",
-    "typescript": "^5.9.3",
-    "webpack": "^5.102.1",
-    "webpack-cli": "^5.1.4"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "axios": "^1.12.2",
-    "dotenv": "^16.6.1",
     "form-data": "^4.0.4"
   }
 }
