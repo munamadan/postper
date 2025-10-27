@@ -63,6 +63,5 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 ---
 
 **Made by Dipan Kharel**
-\`\`\`
 
 ---
