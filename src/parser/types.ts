@@ -2,6 +2,7 @@ import { HttpMethod } from '../types/common';
 
 export interface ParsedRequest {
   id: string;
+  name?: string;
   method: HttpMethod;
   url: string;
   headers: Map<string, string>;

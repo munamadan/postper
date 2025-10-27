@@ -80,7 +80,10 @@ export class HttpParser {
             errors.push(result.error);
             continue; // ENHANCED: Continue parsing instead of stopping
           }
+
+          // ✅ Add name extraction here
           currentRequest = result.request;
+          currentRequest.name = this.extractRequestName(lines, i); // <-- integrated line
           currentState = ParserState.READING_HEADERS;
           bodyLines = [];
           continue;
@@ -163,6 +166,31 @@ export class HttpParser {
   }
 
   /**
+   * Extract @name from comments above request
+   */
+  private extractRequestName(lines: string[], currentLineIndex: number): string | undefined {
+    // Look at previous lines for # @name or // @name
+    for (let i = currentLineIndex - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+
+      // Stop at empty line or separator
+      if (!line || this.isSeparator(line)) {
+        break;
+      }
+
+      // Check for @name comment
+      if (line.startsWith('#') || line.startsWith('//')) {
+        const nameMatch = line.match(/@name\s+([a-zA-Z0-9_]+)/);
+        if (nameMatch) {
+          return nameMatch[1];
+        }
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * NEW: Finalize request by trimming trailing blank lines from body
    */
   private finalizeRequest(request: Partial<ParsedRequest>, bodyLines: string[]): void {
@@ -183,6 +211,13 @@ export class HttpParser {
    */
   private isCommentLine(line: string): boolean {
     return line.startsWith('#') || line.startsWith('//');
+  }
+
+  /**
+   * Helper to check if a line is a separator
+   */
+  private isSeparator(line: string): boolean {
+    return HttpParser.REQUEST_SEPARATORS.test(line);
   }
 
   /**

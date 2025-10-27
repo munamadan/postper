@@ -55,6 +55,11 @@
       {
         "command": "http-client.copyAsCurl",
         "title": "HTTP Client: Copy as cURL"
+      },
+      {
+        
+        "command": "vscode-http-client.clearChain",
+        "title": "HTTP Client: Clear Response Chain"  
       }
     ],
     "menus": {

@@ -11,6 +11,7 @@ import { httpClient } from './client/httpClient';
 import { HttpRequest } from './types/common';
 import { environmentManager } from './storage/environmentManager';
 import { envResolver } from './env/envResolver';
+import { responseChainManager } from './storage/responseChainManager';
 
 let codeLensProvider: HttpCodeLensProvider;
 let fileWatcher: FileWatcher;
@@ -111,8 +112,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // Resolve environment variables
           let resolvedRequest = request;
           try {
-            const currentEnv = environmentManager.getCurrentEnvironment();
-            resolvedRequest = envResolver.resolveRequest(request, currentEnv);
+            resolvedRequest = envResolver.resolve(request);
           } catch (err) {
             logger.error(`Environment resolution failed: ${err}`);
             vscode.window.showErrorMessage(`Failed to resolve environment variables: ${err}`);
@@ -158,6 +158,17 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
+          // Save response if request has a name (for chained requests)
+          try {
+            if (resolvedRequest.name) {
+              responseChainManager.saveResponse(resolvedRequest.name, response);
+            }
+          } catch (e) {
+            logger.debug(`Failed to save response to chain manager: ${e}`);
+          }
+
+          // Show response in the panel (open panel then render response)
+          responsePanel.show();
           responsePanel.displayResponse(response);
 
           if (response.error) {
@@ -212,6 +223,14 @@ export async function activate(context: vscode.ExtensionContext) {
       responsePanel.show();
     });
 
+    const clearChainCommand = vscode.commands.registerCommand(
+      'vscode-http-client.clearChain',
+      () => {
+        responseChainManager.clearAll();
+        vscode.window.showInformationMessage('Cleared all saved responses');
+      }
+    );
+
     // Add all disposables to context
     context.subscriptions.push(
       codeLensProviderDisposable,
@@ -220,6 +239,7 @@ export async function activate(context: vscode.ExtensionContext) {
       cancelRequestCmd,
       copyAsCurlCmd,
       focusResponseCmd,
+      clearChainCommand,
       statusBar,
       responsePanel,
       fileWatcher,
