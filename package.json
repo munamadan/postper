@@ -3,19 +3,19 @@
   "displayName": "POSTPER",
   "description": "Execute HTTP Requests from .http files with environment variables and request chaining",
   "version": "1.0.0",
-  "publisher": "dipankharel",
+  "publisher": "DipanKharel",
   "author": {
     "name": "Dipan Kharel"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dipankharel/postper"
+    "url": "https://github.com/munamadan/postper"
   },
   "bugs": {
-    "url": "https://github.com/dipankharel/postper/issues"
+    "url": "https://github.com/munamadan/postper/issues"
   },
-  "homepage": "https://github.com/dipankharel/postper#readme",
+  "homepage": "https://github.com/munamadan/postper#readme",
   "keywords": [
     "http",
     "rest",
