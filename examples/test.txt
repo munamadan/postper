@@ -1,0 +1,16 @@
+This is a test file for POSTPER file upload demonstrations.
+
+You can replace this with any file you want to upload.
+
+Features demonstrated:
+- Text file upload
+- Multipart form data
+- Mixed text and file fields
+- Auto MIME type detection
+
+Lines can contain:
+- Plain text
+- Special characters: !@#$%^&*()
+- Unicode: 你好 こんにちは 안녕하세요 🎉
+- Numbers: 123456789
+- Paths: C:\Users\Test\file.txt
