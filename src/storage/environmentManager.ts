@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Environment } from '../env/types';
 import { envParser } from '../env/envParser';
+import { envResolver } from '../env/envResolver';
 import { logger } from '../utils/logger';
 
 export class EnvironmentManager {
@@ -49,10 +50,15 @@ export class EnvironmentManager {
 
     // Set default environment
     if (this.availableEnvironments.size > 0) {
-      this.currentEnvironment = 
-        this.availableEnvironments.get('default') || 
+      this.currentEnvironment =
+        this.availableEnvironments.get('default') ||
         Array.from(this.availableEnvironments.values())[0];
+
+      // Ensure the resolver has the selected environment so variable lookups work
+      envResolver.setEnvironment(this.currentEnvironment);
+
       logger.info(`Current environment: ${this.currentEnvironment.name}`);
+      logger.info(`Loaded environment: ${this.currentEnvironment.name} with ${this.currentEnvironment.variables.size} variables`);
     }
   }
 
@@ -68,6 +74,8 @@ export class EnvironmentManager {
     const env = this.availableEnvironments.get(name);
     if (env) {
       this.currentEnvironment = env;
+      // Update envResolver when switching environments
+      envResolver.setEnvironment(env);
       logger.info(`Switched to environment: ${name}`);
       return true;
     }

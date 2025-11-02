@@ -1,8 +1,8 @@
 # How POSTPER Works
 
-Understanding the internals of POSTPER HTTP client.
+Understanding the internals of the POSTPER HTTP client.
 
-## 🏗️ Architecture
+## Architecture
 ```
 ┌─────────────────┐
 │  .http File     │
@@ -37,7 +37,7 @@ Understanding the internals of POSTPER HTTP client.
 └─────────────────┘
 ```
 
-## 📝 Request Parsing
+## Request Parsing
 
 When you click "Send Request":
 
@@ -53,7 +53,7 @@ When you click "Send Request":
    - No body on GET/HEAD
    - No duplicate headers
 
-## 🔄 Variable Resolution
+## Variable Resolution
 
 Variables are resolved in this order:
 
@@ -88,7 +88,7 @@ GET {{BASE_URL}}/users
 - `{{VARIABLE}}` replaced with values
 - Nested variables supported
 
-## 📤 File Uploads
+## File Uploads
 
 Multipart requests are handled specially:
 
@@ -106,7 +106,7 @@ Multipart requests are handled specially:
    - Sets correct headers
    - Sends to server
 
-## 🎨 Response Display
+## Response Display
 
 Responses are formatted based on Content-Type:
 ```javascript
@@ -122,7 +122,7 @@ if (contentType.includes('json')) {
 }
 ```
 
-## 💾 State Management
+## State Management
 
 POSTPER maintains state in memory:
 
@@ -132,21 +132,21 @@ POSTPER maintains state in memory:
 
 State persists during VS Code session but is cleared on reload.
 
-## 🔐 Security
+## Security
 
 - **No data sent to servers** except your API
 - **Credentials in .env** files (gitignored)
 - **No telemetry** or analytics
 - **Open source** - audit the code yourself
 
-## 🎯 Performance
+## Performance
 
 - **Parser**: 1000 requests in <20ms
 - **Variable resolution**: <5ms per request
 - **File reading**: Async, non-blocking
 - **Response display**: Lazy rendering for large bodies
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Language**: TypeScript
 - **HTTP Client**: Axios
@@ -154,7 +154,7 @@ State persists during VS Code session but is cleared on reload.
 - **UI**: VS Code WebView API
 - **Testing**: Jest (144 tests, 91% coverage)
 
-## 📦 File Types
+## File Types
 
 POSTPER recognizes these files:
 
@@ -163,7 +163,7 @@ POSTPER recognizes these files:
 
 Both work identically!
 
-## 🔮 Future Enhancements
+## Future Enhancements
 
 Planned for future versions:
 
@@ -174,7 +174,7 @@ Planned for future versions:
 - Collection organization
 - Proxy configuration
 
-## 🤝 Contributing
+## Contributing
 
 Want to improve POSTPER?
 
@@ -182,7 +182,7 @@ Want to improve POSTPER?
 2. Read `CONTRIBUTING.md`
 3. Submit a pull request
 
-## 📚 Learn More
+## Learn More
 
 - [API Reference](../README.md#-usage-guide)
 - [Examples](./01-basic-requests.http)
@@ -190,4 +190,4 @@ Want to improve POSTPER?
 
 ---
 
-**Built with ❤️ by Dipan Kharel**
+**Built by Dipan Kharel**

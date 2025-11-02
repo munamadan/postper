@@ -8,7 +8,7 @@ coverage/
 *.log
 .env
 debug.txt
-*.http
 coverage/
 vsc-extension-quickstart.md 
 vscode-http-client.code-workspace
+*.http

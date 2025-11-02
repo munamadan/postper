@@ -2,17 +2,17 @@
 
 Execute HTTP requests directly from `.http` files in Visual Studio Code. A lightweight, text-based alternative to Postman with support for environment variables, request chaining, and file uploads.
 
-## ✨ Features
+## Features
 
-- 📝 **Text-based HTTP requests** - Write requests in simple `.http` files
-- 🔗 **Request chaining** - Use responses from previous requests
-- 🌍 **Environment variables** - Switch between dev/prod/test environments
-- 📤 **File uploads** - Support for multipart/form-data
-- 🎨 **Syntax highlighting** - Beautiful HTTP syntax coloring
-- 💾 **Version control friendly** - Plain text files work with Git
-- 🚀 **Fast and lightweight** - No heavy GUI, just your editor
+- **Text-based HTTP requests** - Write requests in simple `.http` files
+- **Request chaining** - Use responses from previous requests
+- **Environment variables** - Switch between dev/prod/test environments
+- **File uploads** - Support for multipart/form-data
+- **Syntax highlighting** - Beautiful HTTP syntax coloring
+- **Version control friendly** - Plain text files work with Git
+- **Fast and lightweight** - No heavy GUI, just your editor
 
-## 📦 Installation
+## Installation
 
 1. Open VS Code
 2. Press `Ctrl+P` (or `Cmd+P` on Mac)
@@ -21,7 +21,7 @@ Execute HTTP requests directly from `.http` files in Visual Studio Code. A light
 
 Or search for "POSTPER" in the Extensions view (`Ctrl+Shift+X`).
 
-## 📝 Examples
+## Examples
 
 Check out the `examples/` folder in the [GitHub repository](https://github.com/dipankharel/postper) for more examples:
 
@@ -30,13 +30,13 @@ Check out the `examples/` folder in the [GitHub repository](https://github.com/d
 - File uploads
 - WebSocket connections (coming soon)
 
-## 🐛 Known Limitations
+## Known Limitations
 
 - Headers with hyphens in chain variables (use simple names)
 - Binary file downloads (text responses only)
 - WebSocket support (planned for v2.0)
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -46,19 +46,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built using TypeScript and VS Code Extension API
 
-## 📞 Support
+## Support
 
-- 🐛 **Report bugs:** [GitHub Issues](https://github.com/dipankharel/postper/issues)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/dipankharel/postper/discussions)
-- ⭐ **Star on GitHub:** [github.com/dipankharel/postper](https://github.com/dipankharel/postper)
+- **Report bugs:** [GitHub Issues](https://github.com/dipankharel/postper/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/dipankharel/postper/discussions)
+- **Star on GitHub:** [github.com/dipankharel/postper](https://github.com/dipankharel/postper)
 
 ---
 

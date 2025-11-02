@@ -2,7 +2,7 @@ export interface SavedResponse {
   name: string;
   status: number;
   headers: Map<string, string>;
-  body: any; // Parsed JSON or string
+  body: any; 
   rawBody: Buffer;
   timestamp: number;
 }

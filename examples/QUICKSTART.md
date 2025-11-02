@@ -1,8 +1,8 @@
 # POSTPER Quick Start Guide
 
-Welcome to POSTPER! This guide will get you up and running in 5 minutes.
+Welcome to POSTPER. This guide will get you up and running in five minutes.
 
-## 📝 Step 1: Create Your First Request
+## Step 1: Create Your First Request
 
 1. Create a new file: `test.http`
 2. Add a simple request:
@@ -13,7 +13,7 @@ GET https://httpbin.org/get
 3. Click the **"Send Request"** button that appears above the request
 4. View the response in the panel that opens!
 
-## 🎯 Step 2: Try Different HTTP Methods
+## Step 2: Try Different HTTP Methods
 ```http
 ### GET request
 GET https://httpbin.org/get
@@ -30,7 +30,7 @@ Content-Type: application/json
 }
 ```
 
-## 🌍 Step 3: Add Environment Variables
+## Step 3: Add Environment Variables
 
 1. Create `.env` in your workspace root:
 ```
@@ -44,7 +44,7 @@ GET {{BASE_URL}}/headers
 Authorization: Bearer {{API_KEY}}
 ```
 
-## 🔗 Step 4: Chain Requests
+## Step 4: Chain Requests
 ```http
 ### Save response
 # @name login
@@ -59,7 +59,7 @@ Content-Type: application/json
 GET https://httpbin.org/get?user={{login.response.body.json.username}}
 ```
 
-## 📤 Step 5: Upload Files
+## Step 5: Upload Files
 ```http
 POST https://httpbin.org/post
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
@@ -71,14 +71,14 @@ Content-Disposition: form-data; name="file"; filename="test.txt"
 ------WebKitFormBoundary--
 ```
 
-## 🎨 Tips
+## Tips
 
 - Use `###` or `---` to separate multiple requests
 - Add `# comments` to document your API tests
 - Press `Ctrl+Shift+P` → "POSTPER: Send Request" to execute
 - Right-click → "POSTPER: Send Request" also works
 
-## 📚 Learn More
+## Learn More
 
 Check out the example files:
 - `01-basic-requests.http` - HTTP methods and headers
@@ -86,9 +86,9 @@ Check out the example files:
 - `03-request-chaining.http` - Save and reuse responses
 - `04-file-upload.http` - Upload files with multipart
 
-## 🆘 Need Help?
+## Need Help?
 
 - Open an issue: https://github.com/dipankharel/postper/issues
 - Read the README: https://github.com/dipankharel/postper
 
-Happy testing! 🚀
+Happy testing!

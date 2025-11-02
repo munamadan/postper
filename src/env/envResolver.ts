@@ -15,7 +15,9 @@ export class EnvResolver {
   }
 
   /**
-   * New unified resolve method — resolves chain variables first, then environment variables.
+   * Resolve variables for a parsed request. Chain variables are resolved first,
+   * followed by environment variables. Returns a new ParsedRequest with values
+   * substituted.
    */
   resolve(request: ParsedRequest): ParsedRequest {
     try {

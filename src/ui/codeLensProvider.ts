@@ -1,17 +1,17 @@
   import * as vscode from 'vscode';
 
-  export class HttpCodeLensProvider implements vscode.CodeLensProvider {
-    private codeLensChangeEmitter = new vscode.EventEmitter<void>();
-    onDidChangeCodeLenses = this.codeLensChangeEmitter.event;
+export class HttpCodeLensProvider implements vscode.CodeLensProvider {
+  private codeLensChangeEmitter = new vscode.EventEmitter<void>();
+  onDidChangeCodeLenses = this.codeLensChangeEmitter.event;
 
-    provideCodeLenses(
-      document: vscode.TextDocument,
-      _token: vscode.CancellationToken
-    ): vscode.CodeLens[] {
-      const codeLenses: vscode.CodeLens[] = [];
+  provideCodeLenses(
+    document: vscode.TextDocument,
+    _token: vscode.CancellationToken
+  ): vscode.CodeLens[] {
+    const codeLenses: vscode.CodeLens[] = [];
 
-      // Placeholder: Will parse document in Phase 2
-      // For now, just show CodeLens on lines that start with HTTP methods
+    // Temporary behavior: show CodeLens on lines that start with HTTP methods.
+    // Full request parsing will be added later.
       const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 
       for (let lineNum = 0; lineNum < document.lineCount; lineNum++) {

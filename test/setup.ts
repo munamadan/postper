@@ -1,4 +1,3 @@
-// Mock vscode module for all tests
 jest.mock('vscode', () => ({
   window: {
     createOutputChannel: jest.fn(() => ({
