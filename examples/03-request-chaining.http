@@ -1,0 +1,90 @@
+# ================================================
+# POSTPER Examples - Request Chaining
+# ================================================
+#
+# Save responses with @name and reference them later
+# 
+# Execute requests in order (top to bottom)
+# 
+# ================================================
+
+### Step 1: Login and save response
+# @name login
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "testpass123",
+  "timestamp": 1234567890
+}
+
+###
+
+### Step 2: Use data from login response
+GET https://httpbin.org/get?user={{login.response.body.json.username}}&time={{login.response.body.json.timestamp}}
+X-Timestamp: {{login.response.body.json.timestamp}}
+X-User: {{login.response.body.json.username}}
+
+###
+
+### Step 3: Create resource with chained data
+# @name createResource
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "created_by": "{{login.response.body.json.username}}",
+  "timestamp": "{{login.response.body.json.timestamp}}",
+  "resource_name": "Test Resource"
+}
+
+###
+
+### Step 4: Reference multiple previous responses
+GET https://httpbin.org/get?status={{createResource.response.status}}&user={{login.response.body.json.username}}
+
+###
+
+### Step 5: Use response status code
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "original_user": "{{login.response.body.json.username}}",
+  "resource_status": "{{createResource.response.status}}",
+  "summary": "Created by {{login.response.body.json.username}} with status {{createResource.response.status}}"
+}
+
+###
+
+# ================================================
+# Accessing Response Data
+# ================================================
+#
+# Body property:     {{name.response.body.property}}
+# Nested property:   {{name.response.body.user.id}}
+# Array element:     {{name.response.body.items[0].name}}
+# Status code:       {{name.response.status}}
+#
+# To clear saved responses:
+# Command Palette → "POSTPER: Clear Response Chain"
+# ================================================
+
+### Step 6: Test with array data
+# @name arrayTest
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "users": [
+    {"id": 1, "name": "Alice"},
+    {"id": 2, "name": "Bob"}
+  ]
+}
+
+###
+
+### Step 7: Access array element
+# Access first user's name: {{arrayTest.response.body.json.users[0].name}}
+GET https://httpbin.org/get?first_user={{arrayTest.response.body.json.users[0].name}}

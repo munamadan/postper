@@ -1,0 +1,65 @@
+# ================================================
+# POSTPER Examples - Environment Variables
+# ================================================
+#
+# To use environment variables:
+# 
+# 1. Create a .env file in your workspace root:
+#
+#    BASE_URL=https://api.example.com
+#    API_KEY=your-api-key-here
+#    USER_ID=123
+#    VERSION=v1
+#
+# 2. Variables are resolved automatically
+# 3. Use {{VARIABLE_NAME}} syntax
+#
+# ================================================
+
+### Use environment variables in URL
+GET {{BASE_URL}}/get?user_id={{USER_ID}}&version={{VERSION}}
+
+###
+
+### Use variables in headers
+GET {{BASE_URL}}/headers
+Authorization: Bearer {{API_KEY}}
+Accept: application/json
+
+###
+
+### Use variables in body
+POST {{BASE_URL}}/users
+Content-Type: application/json
+Authorization: Bearer {{API_KEY}}
+
+{
+  "api_key": "{{API_KEY}}",
+  "endpoint": "{{BASE_URL}}",
+  "user_id": "{{USER_ID}}"
+}
+
+###
+
+# ================================================
+# Multiple Environment Files
+# ================================================
+#
+# You can create multiple environment files:
+#
+# .env              - Default (localhost)
+# .env.development  - Development server
+# .env.production   - Production server
+# .env.test         - Test server
+#
+# The extension automatically loads the appropriate one
+# ================================================
+
+### Example using BASE_URL variable
+GET {{BASE_URL}}/api/status
+
+###
+
+### Nested variables work too!
+# If BASE_URL={{PROTOCOL}}://{{HOST}}:{{PORT}}
+GET {{BASE_URL}}/health

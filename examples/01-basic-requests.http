@@ -1,0 +1,73 @@
+# ================================================
+# POSTPER Examples - Basic HTTP Requests
+# ================================================
+# 
+# Click "Send Request" above any request to execute it
+# 
+# ================================================
+
+### Simple GET request
+GET https://httpbin.org/get
+
+###
+
+### GET with query parameters
+GET https://httpbin.org/get?name=John&age=30
+
+###
+
+### GET with headers
+GET https://httpbin.org/headers
+User-Agent: POSTPER/1.0
+Accept: application/json
+X-Custom-Header: CustomValue
+
+###
+
+### POST with JSON body
+POST https://httpbin.org/post
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "age": 25,
+  "active": true
+}
+
+###
+
+### PUT request
+PUT https://httpbin.org/put
+Content-Type: application/json
+
+{
+  "id": 123,
+  "name": "Updated Name",
+  "status": "modified"
+}
+
+###
+
+### DELETE request
+DELETE https://httpbin.org/delete
+
+###
+
+### PATCH request
+PATCH https://httpbin.org/patch
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+
+###
+
+### HEAD request (no response body)
+HEAD https://httpbin.org/get
+
+###
+
+### OPTIONS request
+OPTIONS https://httpbin.org/get

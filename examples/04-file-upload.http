@@ -1,0 +1,63 @@
+# ================================================
+# POSTPER Examples - File Upload
+# ================================================
+#
+# Upload files using multipart/form-data
+#
+# Important: File paths are relative to workspace root
+#
+# ================================================
+
+### Upload a text file
+POST https://httpbin.org/post
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="title"
+
+My Document Upload
+------WebKitFormBoundary
+Content-Disposition: form-data; name="description"
+
+This is a test file upload using POSTPER
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+< ./examples/test.txt
+------WebKitFormBoundary--
+
+###
+
+### Upload with multiple fields
+POST https://httpbin.org/post
+Content-Type: multipart/form-data; boundary=----Boundary1234
+
+------Boundary1234
+Content-Disposition: form-data; name="username"
+
+testuser
+------Boundary1234
+Content-Disposition: form-data; name="email"
+
+test@example.com
+------Boundary1234
+Content-Disposition: form-data; name="avatar"; filename="profile.jpg"
+Content-Type: image/jpeg
+
+< ./examples/test.txt
+------Boundary1234--
+
+###
+
+# ================================================
+# Supported File Types
+# ================================================
+#
+# - Text files (.txt, .csv, .json, .xml)
+# - Images (.jpg, .png, .gif, .webp)
+# - Documents (.pdf, .docx, .xlsx)
+# - Archives (.zip, .tar, .gz)
+#
+# MIME types are auto-detected from file extensions
+# ================================================
