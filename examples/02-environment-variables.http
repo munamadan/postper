@@ -6,10 +6,11 @@
 # 
 # 1. Create a .env file in your workspace root:
 #
-#    BASE_URL=https://api.example.com
-#    API_KEY=your-api-key-here
+#    BASE_URL=https://httpbin.org
+#    API_KEY=demo-api-key-12345
 #    USER_ID=123
 #    VERSION=v1
+#    USERNAME=testuser
 #
 # 2. Variables are resolved automatically
 # 3. Use {{VARIABLE_NAME}} syntax
@@ -25,18 +26,36 @@ GET {{BASE_URL}}/get?user_id={{USER_ID}}&version={{VERSION}}
 GET {{BASE_URL}}/headers
 Authorization: Bearer {{API_KEY}}
 Accept: application/json
+X-User-ID: {{USER_ID}}
 
 ###
 
 ### Use variables in body
-POST {{BASE_URL}}/users
+POST {{BASE_URL}}/post
 Content-Type: application/json
 Authorization: Bearer {{API_KEY}}
 
 {
   "api_key": "{{API_KEY}}",
   "endpoint": "{{BASE_URL}}",
-  "user_id": "{{USER_ID}}"
+  "user_id": "{{USER_ID}}",
+  "username": "{{USERNAME}}"
+}
+
+###
+
+### Multiple variables in single request
+POST {{BASE_URL}}/anything
+Content-Type: application/json
+X-API-Key: {{API_KEY}}
+X-User: {{USERNAME}}
+
+{
+  "user": {
+    "id": "{{USER_ID}}",
+    "name": "{{USERNAME}}"
+  },
+  "version": "{{VERSION}}"
 }
 
 ###
@@ -56,10 +75,23 @@ Authorization: Bearer {{API_KEY}}
 # ================================================
 
 ### Example using BASE_URL variable
-GET {{BASE_URL}}/api/status
+GET {{BASE_URL}}/status
+
+###
+
+### Test with httpbin's /anything endpoint (accepts any path)
+GET {{BASE_URL}}/anything/{{VERSION}}/users/{{USER_ID}}
 
 ###
 
 ### Nested variables work too!
-# If BASE_URL={{PROTOCOL}}://{{HOST}}:{{PORT}}
-GET {{BASE_URL}}/health
+# If you have:
+# PROTOCOL=https
+# HOST=httpbin.org
+# BASE_URL={{PROTOCOL}}://{{HOST}}
+GET {{BASE_URL}}/get?test=nested
+
+###
+
+### Variables in query parameters
+GET {{BASE_URL}}/get?api_key={{API_KEY}}&user={{USERNAME}}&id={{USER_ID}}
