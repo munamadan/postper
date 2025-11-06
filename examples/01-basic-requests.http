@@ -69,5 +69,5 @@ HEAD https://httpbin.org/get
 
 ###
 
-### OPTIONS request
+### OPTIONS basic request 
 OPTIONS https://httpbin.org/get
