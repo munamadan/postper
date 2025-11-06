@@ -11,4 +11,3 @@ debug.txt
 coverage/
 vsc-extension-quickstart.md 
 vscode-http-client.code-workspace
-*.http
