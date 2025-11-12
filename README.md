@@ -23,7 +23,7 @@ Or search for "POSTPER" in the Extensions view (`Ctrl+Shift+X`).
 
 ## Examples
 
-Check out the `examples/` folder in the [GitHub repository](https://github.com/dipankharel/postper) for more examples:
+Check out the `examples/` folder in the GitHub repository for more examples:
 
 - REST API CRUD operations
 - Authentication flows
