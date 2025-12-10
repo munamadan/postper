@@ -20,7 +20,7 @@ If you're cloning the repo and want to test it (the extension isn't available in
 1. Run 'git clone https://github.com/munamadan/postper.git'
 2. Then run 'npm install' which will install all the packages.
 3. Run 'npm compile' to compile the whole extension.
-4. Press `F5` to open a new VSCode window with the extension loaded.
+4. Press `Ctrl + F5` to open a new VSCode window with the extension loaded.
 5. Open or create a `.http` file and start writing requests! (test .http files are already inside the directory).
 6. If you also want to test HTTP requests with environment variables, create a `.env` file in the root directory and add your variables there. More steps are in the examples/02-environment-variables.http file.
 
