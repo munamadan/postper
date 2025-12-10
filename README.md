@@ -14,12 +14,7 @@ Execute HTTP requests directly from `.http` files in Visual Studio Code. A light
 
 ## Installation
 
-1. Open VS Code
-2. Press `Ctrl+P` (or `Cmd+P` on Mac)
-3. Type: `ext install dipankharel.postper`
-4. Press Enter
-
-Or search for "POSTPER" in the Extensions view (`Ctrl+Shift+X`).
+Search for "POSTPER" in the Extensions view (`Ctrl+Shift+X`).
 
 If you're cloning the repo and want to test it (the extension isn't available in the VSCode marketplace :()):
 1. Run 'git clone https://github.com/munamadan/postper.git'
