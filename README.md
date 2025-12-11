@@ -61,7 +61,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - **Report bugs:** [GitHub Issues](https://github.com/munamadan/postper/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/munamadan/postper/discussions)
-- **Star on GitHub:** [github.com/dipankharel/postper](https://github.com/munamadan/postper)
+- **Star on GitHub:** [github.com/munamadan/postper](https://github.com/munamadan/postper)
 
 ---
 
