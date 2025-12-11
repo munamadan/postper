@@ -163,30 +163,12 @@ POSTPER recognizes these files:
 
 Both work identically!
 
-## Future Enhancements
-
-Planned for future versions:
-
-- WebSocket support
-- GraphQL query formatting
-- Response assertions/testing
-- Request history
-- Collection organization
-- Proxy configuration
-
 ## Contributing
 
 Want to improve POSTPER?
 
 1. Fork the repo
-2. Read `CONTRIBUTING.md`
 3. Submit a pull request
-
-## Learn More
-
-- [API Reference](../README.md#-usage-guide)
-- [Examples](./01-basic-requests.http)
-- [Troubleshooting](../README.md#-support)
 
 ---
 

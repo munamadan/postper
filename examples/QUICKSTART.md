@@ -88,7 +88,7 @@ Check out the example files:
 
 ## Need Help?
 
-- Open an issue: https://github.com/dipankharel/postper/issues
-- Read the README: https://github.com/dipankharel/postper
+- Open an issue: https://github.com/munamadan/postper/issues
+- Read the README: https://github.com/munamadan/postper
 
 Happy testing!
