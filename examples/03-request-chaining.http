@@ -1,12 +1,7 @@
-# ================================================
-# POSTPER Examples - Request Chaining
-# ================================================
 #
 # Save responses with @name and reference them later
 # 
 # Execute requests in order (top to bottom)
-# 
-# ================================================
 
 ### Step 1: Login and save response
 # @name login

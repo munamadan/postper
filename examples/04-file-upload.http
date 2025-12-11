@@ -1,12 +1,8 @@
-# ================================================
-# POSTPER Examples - File Upload
-# ================================================
 #
 # Upload files using multipart/form-data
 #
 # Important: File paths are relative to workspace root
-#
-# ================================================
+
 
 ### Upload a text file
 POST https://httpbin.org/post

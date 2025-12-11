@@ -1,10 +1,6 @@
-# ================================================
-# POSTPER Examples - Basic HTTP Requests
-# ================================================
 # 
 # Click "Send Request" above any request to execute it
-# 
-# ================================================
+# And yes, you can also copy the whole request as cURL at all types :)
 
 ### Simple GET request
 GET https://httpbin.org/get
