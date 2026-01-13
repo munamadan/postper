@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { logger } from '../utils/logger';
+import { STATUS_BAR_ALIGNMENT, ERROR_DISPLAY_DURATION } from '../utils/constants';
 
 export class StatusBar {
   private statusBarItem: vscode.StatusBarItem;
@@ -8,7 +9,7 @@ export class StatusBar {
   constructor() {
     this.statusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
-      100
+      STATUS_BAR_ALIGNMENT
     );
     this.statusBarItem.name = 'HTTP Client Status';
     this.updateStatus('ready');
@@ -45,7 +46,7 @@ export class StatusBar {
     }
   }
 
-  showError(message: string, durationMs: number = 5000): void {
+  showError(message: string, durationMs: number = ERROR_DISPLAY_DURATION): void {
     this.updateStatus('error');
     logger.error(message);
     setTimeout(() => this.updateStatus('ready'), durationMs);
