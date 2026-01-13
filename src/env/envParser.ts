@@ -42,6 +42,13 @@ export class EnvParser {
       // Handle quoted values
       value = this.unquoteValue(value);
 
+      // Check for duplicate variables
+      if (variables.has(key)) {
+        logger.warn(
+          `Duplicate variable "${key}" in ${filePath || 'environment'}. Last value will be used.`
+        );
+      }
+
       variables.set(key, value);
       logger.debug(`Parsed env variable: ${key}=${value}`);
     }
@@ -81,7 +88,7 @@ export class EnvParser {
     // e.g., ".env.production" -> "production"
     // e.g., ".env" -> "default"
     const filename = filePath.split(/[/\\]/).pop() || '.env';
-    
+
     if (filename === '.env') {
       return 'default';
     }
