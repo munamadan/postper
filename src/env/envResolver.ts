@@ -2,16 +2,23 @@ import { ParsedRequest } from '../parser/types';
 import { Environment } from './types';
 import { logger } from '../utils/logger';
 import { chainResolver } from './chainResolver';
-import { responseChainManager } from '../storage/responseChainManager';
+import { ResponseChainManager } from '../storage/responseChainManager';
+import { MAX_ENV_RESOLUTION_DEPTH } from '../utils/constants';
+
+let responseChainManager: ResponseChainManager;
 
 export class EnvResolver {
   private static readonly VARIABLE_PATTERN = /\{\{(\s*[A-Za-z_][A-Za-z0-9_]*\s*)\}\}/g;
-  private static readonly MAX_RESOLUTION_DEPTH = 10;
 
   private currentEnvironment: Environment | null = null;
+  private resolutionStack = new Set<string>();
 
   setEnvironment(env: Environment | null) {
     this.currentEnvironment = env;
+  }
+
+  setResponseChainManager(manager: ResponseChainManager) {
+    responseChainManager = manager;
   }
 
   /**
@@ -63,19 +70,29 @@ export class EnvResolver {
    * Resolve environment variables in a string recursively
    */
   private resolveVariables(text: string): string {
-    if (!this.currentEnvironment) return text;
+    if (!this.currentEnvironment) {
+      return text;
+    }
 
     let resolved = text;
     let depth = 0;
 
-    while (depth < EnvResolver.MAX_RESOLUTION_DEPTH) {
+    while (depth < MAX_ENV_RESOLUTION_DEPTH) {
       const variables = this.extractVariables(resolved);
 
-      if (variables.length === 0) break;
+      if (variables.length === 0) {
+        break;
+      }
 
       let changed = false;
 
       for (const varName of variables) {
+        // Check for circular reference
+        if (this.resolutionStack.has(varName)) {
+          const cycle = Array.from(this.resolutionStack).concat([varName]).join(' -> ');
+          throw new Error(`Circular reference detected: ${cycle}`);
+        }
+
         const value = this.currentEnvironment.variables.get(varName);
 
         if (value === undefined) {
@@ -84,24 +101,30 @@ export class EnvResolver {
           );
         }
 
-        if (value.includes(`{{${varName}}}`)) {
-          throw new Error(`Circular reference detected: ${varName}`);
-        }
+        // Add to resolution stack
+        this.resolutionStack.add(varName);
 
-        const pattern = new RegExp(`\\{\\{\\s*${this.escapeRegex(varName)}\\s*\\}\\}`, 'g');
-        const newResolved = resolved.replace(pattern, value);
+        try {
+          const pattern = new RegExp(`\\{\\{\\s*${this.escapeRegex(varName)}\\s*\\}\\}`, 'g');
+          const newResolved = resolved.replace(pattern, value);
 
-        if (newResolved !== resolved) {
-          changed = true;
-          resolved = newResolved;
+          if (newResolved !== resolved) {
+            changed = true;
+            resolved = newResolved;
+          }
+        } finally {
+          // Remove from resolution stack
+          this.resolutionStack.delete(varName);
         }
       }
 
-      if (!changed) break;
+      if (!changed) {
+        break;
+      }
       depth++;
     }
 
-    if (depth >= EnvResolver.MAX_RESOLUTION_DEPTH) {
+    if (depth >= MAX_ENV_RESOLUTION_DEPTH) {
       throw new Error('Variable resolution exceeded maximum depth (possible circular reference)');
     }
 
