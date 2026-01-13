@@ -9,29 +9,34 @@ import { httpParser } from './parser/httpParser';
 import { requestValidator } from './parser/requestValidator';
 import { httpClient } from './client/httpClient';
 import { HttpRequest } from './types/common';
+import { ParsedRequest } from './parser/types';
 import { environmentManager } from './storage/environmentManager';
 import { envResolver } from './env/envResolver';
-import { responseChainManager } from './storage/responseChainManager';
+import { ResponseChainManager } from './storage/responseChainManager';
+import { DEFAULT_REQUEST_TIMEOUT } from './utils/constants';
 
 let codeLensProvider: HttpCodeLensProvider;
 let fileWatcher: FileWatcher;
 let documentWatcher: DocumentWatcher;
 let statusBar: StatusBar;
 let responsePanel: ResponsePanel;
+let responseChainManager: ResponseChainManager;
 
-// Track active requests so we can avoid showing late responses and allow cancellation
 const activeRequests = new Map<string, { cancelled: boolean; controller?: AbortController }>();
+let activeRequestCount = 0;
 
 export async function activate(context: vscode.ExtensionContext) {
   logger.info('HTTP Client extension activating...');
 
   try {
-    // Initialize UI components
     statusBar = new StatusBar();
     responsePanel = new ResponsePanel();
     codeLensProvider = new HttpCodeLensProvider();
     fileWatcher = new FileWatcher();
     documentWatcher = new DocumentWatcher();
+    responseChainManager = new ResponseChainManager(context);
+
+    envResolver.setResponseChainManager(responseChainManager);
 
     await environmentManager.loadEnvironments();
     const currentEnv = environmentManager.getCurrentEnvironment();
@@ -41,7 +46,6 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
 
-    // Register CodeLens provider
     const codeLensProviderDisposable = vscode.languages.registerCodeLensProvider(
       [
         { language: 'http', scheme: 'file' },
@@ -50,13 +54,10 @@ export async function activate(context: vscode.ExtensionContext) {
       codeLensProvider
     );
 
-    // Watch for document changes to update CodeLens
     const documentChangeDisposable = documentWatcher.onDidChangeDocument(() => {
       codeLensProvider.notifyDocumentChanged();
     });
 
-    // Setup file watcher
-    // If the FileWatcher exposes a Disposable from startWatching, capture it and register it.
     const fileWatcherDisposable = fileWatcher.startWatching(
       (uri) => logger.info(`New HTTP file created: ${uri.fsPath}`),
       (uri) => {
@@ -64,25 +65,19 @@ export async function activate(context: vscode.ExtensionContext) {
         codeLensProvider.notifyDocumentChanged();
       },
       (uri) => logger.info(`HTTP file deleted: ${uri.fsPath}`)
-    ) as unknown as vscode.Disposable | undefined;
+    );
 
-    // startWatching may return void or a Disposable; cast safely and register only when present
-    if (fileWatcherDisposable && typeof (fileWatcherDisposable as any).dispose === 'function') {
-      context.subscriptions.push(fileWatcherDisposable);
-    }
+    context.subscriptions.push(fileWatcherDisposable);
 
-    // Register commands
     const sendRequestCmd = vscode.commands.registerCommand(
       'http-client.sendRequest',
       async (uri: vscode.Uri, lineNumber: number) => {
         try {
           logger.info(`Send request at line ${lineNumber} in ${uri.fsPath}`);
 
-          // Read document
           const document = await vscode.workspace.openTextDocument(uri);
           const content = document.getText();
 
-          // Parse requests
           const parseResult = httpParser.parse(content);
           if (!parseResult.success) {
             const errorMsg = parseResult.errors.map((e) => e.message).join(', ');
@@ -92,7 +87,6 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // Find request at the given line
           const request = parseResult.requests.find((r) => r.lineNumber === lineNumber);
           if (!request) {
             logger.error('No request found at this line');
@@ -100,7 +94,6 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // Validate request
           const validationError = requestValidator.validate(request);
           if (validationError) {
             logger.error(`Validation error: ${validationError.message}`);
@@ -109,7 +102,6 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // Resolve environment variables
           let resolvedRequest = request;
           try {
             resolvedRequest = envResolver.resolve(request);
@@ -124,7 +116,6 @@ export async function activate(context: vscode.ExtensionContext) {
           const wsRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
           logger.info(`Extension workspace root: ${wsRoot}`);
 
-          // Use resolvedRequest instead of request for HttpRequest creation
           const httpRequest: HttpRequest = {
             id: resolvedRequest.id,
             method: resolvedRequest.method,
@@ -132,7 +123,7 @@ export async function activate(context: vscode.ExtensionContext) {
             headers: resolvedRequest.headers,
             body: resolvedRequest.body,
             workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-            timeout: 30000,
+            timeout: DEFAULT_REQUEST_TIMEOUT,
             metadata: {
               fileUri: uri.toString(),
               lineNumber: resolvedRequest.lineNumber,
@@ -140,25 +131,25 @@ export async function activate(context: vscode.ExtensionContext) {
             },
           };
 
-          // Track the request so we can ignore late responses and allow cancellation
-          activeRequests.set(httpRequest.id, { cancelled: false });
+          const controller = new AbortController();
+          activeRequests.set(httpRequest.id, { cancelled: false, controller });
 
-          // Execute request
-          statusBar.setActiveRequestCount(1);
-          responsePanel.displayLoading();
+          activeRequestCount++;
+          statusBar.setActiveRequestCount(activeRequestCount);
+          responsePanel.displayLoading(httpRequest.id);
 
-          const response = await httpClient.send(httpRequest);
+          const response = await httpClient.send(httpRequest, controller.signal);
 
-          // If the request was cancelled while in-flight, drop the response and don't update UI
           const tracker = activeRequests.get(httpRequest.id);
           activeRequests.delete(httpRequest.id);
-          statusBar.setActiveRequestCount(0);
+          activeRequestCount--;
+          statusBar.setActiveRequestCount(activeRequestCount);
+
           if (tracker?.cancelled) {
             logger.info(`Response for request ${httpRequest.id} ignored because it was cancelled`);
             return;
           }
 
-          // Save response if request has a name (for chained requests)
           try {
             if (resolvedRequest.name) {
               responseChainManager.saveResponse(resolvedRequest.name, response);
@@ -167,7 +158,6 @@ export async function activate(context: vscode.ExtensionContext) {
             logger.debug(`Failed to save response to chain manager: ${e}`);
           }
 
-          // Show response in the panel (open panel then render response)
           responsePanel.show();
           responsePanel.displayResponse(response);
 
@@ -181,7 +171,12 @@ export async function activate(context: vscode.ExtensionContext) {
             );
           }
         } catch (error) {
-          statusBar.setActiveRequestCount(0);
+          if ((error as any).name === 'CanceledError') {
+            return;
+          }
+
+          activeRequestCount--;
+          statusBar.setActiveRequestCount(activeRequestCount);
           logger.error(`Failed to execute request: ${error}`);
           responsePanel.displayError(`Unexpected error: ${error}`);
           vscode.window.showErrorMessage(`Request failed: ${error}`);
@@ -192,7 +187,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const cancelRequestCmd = vscode.commands.registerCommand('http-client.cancelRequest', () => {
       logger.info('Cancel request command executed');
 
-      // Mark all active requests as cancelled and abort any controllers if present
       for (const [id, info] of activeRequests.entries()) {
         info.cancelled = true;
         if (info.controller) {
@@ -203,19 +197,58 @@ export async function activate(context: vscode.ExtensionContext) {
           }
         }
       }
-      // Clear tracking and update UI
       activeRequests.clear();
       statusBar.setActiveRequestCount(0);
       statusBar.showError('Request cancelled');
       responsePanel.displayError('Request cancelled by user');
     });
 
+    function generateCurlCommand(request: ParsedRequest): string {
+      let cmd = `curl -X ${request.method}`;
+
+      cmd += ` '${request.url}'`;
+
+      if (request.headers.size > 0) {
+        for (const [key, value] of request.headers.entries()) {
+          cmd += ` -H '${key}: ${value}'`;
+        }
+      }
+
+      if (request.body && request.method !== 'GET' && request.method !== 'HEAD') {
+        cmd += ` -d '${request.body.replace(/'/g, "'\\''")}'`;
+      }
+
+      return cmd;
+    }
+
     const copyAsCurlCmd = vscode.commands.registerCommand(
       'http-client.copyAsCurl',
-      (uri: vscode.Uri, lineNumber: number) => {
+      async (uri: vscode.Uri, lineNumber: number) => {
         logger.info(`Copy as cURL at line ${lineNumber} in ${uri.fsPath}`);
-        vscode.env.clipboard.writeText('curl -X GET https://example.com');
-        vscode.window.showInformationMessage('Copied as cURL to clipboard');
+
+        try {
+          const document = await vscode.workspace.openTextDocument(uri);
+          const content = document.getText();
+          const parseResult = httpParser.parse(content);
+
+          if (!parseResult.success) {
+            vscode.window.showErrorMessage('Failed to parse request');
+            return;
+          }
+
+          const request = parseResult.requests.find((r) => r.lineNumber === lineNumber);
+          if (!request) {
+            vscode.window.showErrorMessage('No request found at this line');
+            return;
+          }
+
+          const curlCmd = generateCurlCommand(request);
+          vscode.env.clipboard.writeText(curlCmd);
+          vscode.window.showInformationMessage('Copied as cURL to clipboard');
+        } catch (error) {
+          logger.error(`Failed to copy as cURL: ${error}`);
+          vscode.window.showErrorMessage(`Failed to copy as cURL: ${error}`);
+        }
       }
     );
 
@@ -223,15 +256,11 @@ export async function activate(context: vscode.ExtensionContext) {
       responsePanel.show();
     });
 
-    const clearChainCommand = vscode.commands.registerCommand(
-      'vscode-http-client.clearChain',
-      () => {
-        responseChainManager.clearAll();
-        vscode.window.showInformationMessage('Cleared all saved responses');
-      }
-    );
+    const clearChainCommand = vscode.commands.registerCommand('http-client.clearChain', () => {
+      responseChainManager.clearAll();
+      vscode.window.showInformationMessage('Cleared all saved responses');
+    });
 
-    // Add all disposables to context
     context.subscriptions.push(
       codeLensProviderDisposable,
       documentChangeDisposable,
@@ -258,7 +287,6 @@ export async function activate(context: vscode.ExtensionContext) {
 export function deactivate() {
   logger.info('HTTP Client extension deactivating');
 
-  // Abort and clear any in-flight requests
   for (const [, info] of activeRequests.entries()) {
     info.cancelled = true;
     if (info.controller) {
@@ -271,7 +299,6 @@ export function deactivate() {
   }
   activeRequests.clear();
 
-  // Dispose known disposable-like objects defensively
   try {
     if (statusBar && typeof (statusBar as any).dispose === 'function') {
       (statusBar as any).dispose();
