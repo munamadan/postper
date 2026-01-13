@@ -1,4 +1,5 @@
-  import * as vscode from 'vscode';
+import * as vscode from 'vscode';
+import { httpParser } from '../parser/httpParser';
 
 export class HttpCodeLensProvider implements vscode.CodeLensProvider {
   private codeLensChangeEmitter = new vscode.EventEmitter<void>();
@@ -10,42 +11,44 @@ export class HttpCodeLensProvider implements vscode.CodeLensProvider {
   ): vscode.CodeLens[] {
     const codeLenses: vscode.CodeLens[] = [];
 
-    // Temporary behavior: show CodeLens on lines that start with HTTP methods.
-    // Full request parsing will be added later.
-      const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+    const parseResult = httpParser.parse(document.getText());
 
-      for (let lineNum = 0; lineNum < document.lineCount; lineNum++) {
-        const line = document.lineAt(lineNum);
-        const trimmedLine = line.text.trim();
-
-        // Check if line starts with HTTP method
-        if (httpMethods.some((method) => trimmedLine.startsWith(method))) {
-          const range = new vscode.Range(lineNum, 0, lineNum, line.text.length);
-
-          const sendCodeLens = new vscode.CodeLens(range, {
-            title: '$(play) Send Request',
-            command: 'http-client.sendRequest',
-            arguments: [document.uri, lineNum + 1],
-          });
-
-          const copyCodeLens = new vscode.CodeLens(range, {
-            title: '$(copy) Copy as cURL',
-            command: 'http-client.copyAsCurl',
-            arguments: [document.uri, lineNum + 1],
-          });
-
-          codeLenses.push(sendCodeLens, copyCodeLens);
-        }
-      }
-
+    if (!parseResult.success || parseResult.requests.length === 0) {
       return codeLenses;
     }
 
-    notifyDocumentChanged(): void {
-      this.codeLensChangeEmitter.fire();
+    for (const request of parseResult.requests) {
+      const line = document.lineAt(request.lineNumber - 1);
+      const range = new vscode.Range(
+        request.lineNumber - 1,
+        0,
+        request.lineNumber - 1,
+        line.text.length
+      );
+
+      const sendCodeLens = new vscode.CodeLens(range, {
+        title: '$(play) Send Request',
+        command: 'http-client.sendRequest',
+        arguments: [document.uri, request.lineNumber],
+      });
+
+      const copyCodeLens = new vscode.CodeLens(range, {
+        title: '$(copy) Copy as cURL',
+        command: 'http-client.copyAsCurl',
+        arguments: [document.uri, request.lineNumber],
+      });
+
+      codeLenses.push(sendCodeLens, copyCodeLens);
     }
 
-    dispose(): void {
-      this.codeLensChangeEmitter.dispose();
-    }
+    return codeLenses;
   }
+
+  notifyDocumentChanged(): void {
+    this.codeLensChangeEmitter.fire();
+  }
+
+  dispose(): void {
+    this.codeLensChangeEmitter.dispose();
+  }
+}
