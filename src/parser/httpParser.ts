@@ -178,9 +178,10 @@ export class HttpParser {
         break;
       }
 
-      // Check for @name comment
-      if (line.startsWith('#') || line.startsWith('//')) {
-        const nameMatch = line.match(/@name\s+([a-zA-Z0-9_]+)/);
+      // Check for @name comment - must be exact match
+      if ((line.startsWith('#') || line.startsWith('//')) && line.includes('@name')) {
+        // Match @name followed by word characters, ensuring @name is separate
+        const nameMatch = line.match(/@name\s+([a-zA-Z0-9_-]+)/);
         if (nameMatch) {
           return nameMatch[1];
         }
