@@ -5,7 +5,14 @@ describe('ResponseChainManager', () => {
   let manager: ResponseChainManager;
 
   beforeEach(() => {
-    manager = new ResponseChainManager();
+    // Create mock VSCode context
+    const mockContext: any = {
+      globalState: {
+        get: jest.fn().mockReturnValue(null),
+        update: jest.fn().mockResolvedValue(undefined),
+      },
+    };
+    manager = new ResponseChainManager(mockContext);
   });
 
   test('should save and retrieve response', () => {
