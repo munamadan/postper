@@ -19,7 +19,7 @@ export class MultipartParser {
       // Skip first (empty) and last (closing boundary)
       for (let i = 1; i < sections.length - 1; i++) {
         const section = sections[i].trim();
-        if (!section) continue;
+        if (!section) {continue;}
 
         const part = this.parsePart(section);
         if (part) {
@@ -144,9 +144,11 @@ export class MultipartParser {
    * Extract boundary from Content-Type header
    */
   static extractBoundary(contentType: string): string | null {
-    const match = contentType.match(/boundary=([^;]+)/);
+    // Match boundary= value, handle quoted and unquoted
+    const match = contentType.match(/boundary=(?:"([^"]*)"|([^";\s]+))/);
     if (match) {
-      return match[1].trim().replace(/^["']|["']$/g, ''); // Remove quotes
+      // Use captured group 1 (quoted) or group 2 (unquoted)
+      return match[1] || match[2];
     }
     return null;
   }
