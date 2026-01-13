@@ -7,54 +7,51 @@ import { errorCategorizer } from './errorCategorizer';
 import { logger } from '../utils/logger';
 import { MultipartParser } from '../parser/multipartParser';
 import { fileReader } from '../utils/fileReader';
+import {
+  DEFAULT_REQUEST_TIMEOUT,
+  DEFAULT_MAX_REDIRECTS,
+  RESPONSE_BODY_TRUNCATION_THRESHOLD,
+} from '../utils/constants';
 
 export class HttpClient {
   private axiosInstance: AxiosInstance;
 
   constructor() {
     this.axiosInstance = axios.create({
-      timeout: 30000,
-      maxRedirects: 5,
-      validateStatus: () => true, // Don't throw on any status
+      timeout: DEFAULT_REQUEST_TIMEOUT,
+      maxRedirects: DEFAULT_MAX_REDIRECTS,
+      validateStatus: () => true,
     });
   }
 
-  /**
-   * Build FormData for multipart requests
-   */
   private async buildFormData(
     body: string,
     contentType: string,
     workspaceRoot?: string
   ): Promise<FormData | null> {
     try {
-      // Extract boundary
       const boundary = MultipartParser.extractBoundary(contentType);
       if (!boundary) {
         logger.error('No boundary found in Content-Type header');
         return null;
       }
 
-      // Parse multipart body
       const parseResult = new MultipartParser().parse(body, boundary);
       if (!parseResult.success || !parseResult.multipart) {
         logger.error(`Multipart parsing failed: ${parseResult.error}`);
         return null;
       }
 
-      // Build FormData
       const formData = new FormData();
 
       for (const part of parseResult.multipart.parts) {
         if (part.filePath) {
-          // Read file
           const fileResult = await fileReader.readFile(part.filePath, workspaceRoot);
           if (!fileResult.success || !fileResult.data) {
             logger.error(`Failed to read file: ${fileResult.error}`);
             continue;
           }
 
-          // Add file to form
           formData.append(part.name, fileResult.data, {
             filename: part.filename || path.basename(part.filePath),
             contentType: part.contentType || fileResult.contentType,
@@ -62,7 +59,6 @@ export class HttpClient {
 
           logger.info(`Added file to form: ${part.name} = ${part.filePath}`);
         } else if (part.value !== undefined) {
-          // Add text field
           formData.append(part.name, part.value);
           logger.info(`Added field to form: ${part.name} = ${part.value}`);
         }
@@ -75,10 +71,7 @@ export class HttpClient {
     }
   }
 
-  /**
-   * Send HTTP request
-   */
-  async send(request: HttpRequest): Promise<HttpResponse> {
+  async send(request: HttpRequest, signal?: AbortSignal): Promise<HttpResponse> {
     const startTime = Date.now();
 
     try {
@@ -87,7 +80,6 @@ export class HttpClient {
       let dataToSend: any = request.body || undefined;
       const contentType = request.headers.get('Content-Type') || '';
 
-      // Handle multipart/form-data requests
       if (contentType.includes('multipart/form-data') && request.body) {
         logger.info(`Handling multipart request, workspaceRoot: ${request.workspaceRoot}`);
         const formData = await this.buildFormData(request.body, contentType, request.workspaceRoot);
@@ -102,6 +94,7 @@ export class HttpClient {
         headers: Object.fromEntries(request.headers),
         data: dataToSend,
         timeout: request.timeout,
+        signal,
       });
 
       const totalTime = Date.now() - startTime;
@@ -111,7 +104,7 @@ export class HttpClient {
         typeof response.data === 'string' ? response.data : JSON.stringify(response.data)
       );
 
-      if (bodySize > 1000000) {
+      if (bodySize > RESPONSE_BODY_TRUNCATION_THRESHOLD) {
         logger.warn(`Response body exceeds 1MB (${bodySize} bytes), will be truncated for display`);
       }
 
