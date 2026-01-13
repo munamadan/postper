@@ -9,7 +9,9 @@ export class ChainResolver {
    * Resolve chain variables in text
    */
   resolve(text: string, context: RequestChainContext): string {
-    if (!text) return text;
+    if (!text) {
+      return text;
+    }
 
     // Match {{requestName.response.path}}
     const chainVarPattern =
@@ -89,26 +91,44 @@ export class ChainResolver {
       // Handle direct array index: [0]
       if (part.match(/^\[(\d+)\]$/)) {
         const index = parseInt(part.match(/^\[(\d+)\]$/)![1], 10);
-        if (Array.isArray(current)) {
-          current = current[index];
-        } else {
+        if (!Array.isArray(current)) {
+          logger.debug(`Expected array but got ${typeof current} for path: ${path}`);
           return undefined;
         }
+        if (index < 0 || index >= current.length) {
+          logger.debug(`Array index ${index} out of bounds for path: ${path}`);
+          return undefined;
+        }
+        current = current[index];
       }
       // Handle property with array index: items[0]
       else if (part.match(/^([a-zA-Z0-9_]+)\[(\d+)\]$/)) {
         const arrayMatch = part.match(/^([a-zA-Z0-9_]+)\[(\d+)\]$/)!;
         const key = arrayMatch[1];
         const index = parseInt(arrayMatch[2], 10);
-        current = current[key];
-        if (Array.isArray(current)) {
-          current = current[index];
-        } else {
+
+        if (typeof current !== 'object' || current === null) {
+          logger.debug(`Expected object but got ${typeof current} for path: ${path}`);
           return undefined;
         }
+        current = current[key];
+
+        if (!Array.isArray(current)) {
+          logger.debug(`Expected array at ${key} for path: ${path}`);
+          return undefined;
+        }
+        if (index < 0 || index >= current.length) {
+          logger.debug(`Array index ${index} out of bounds for path: ${path}`);
+          return undefined;
+        }
+        current = current[index];
       }
       // Handle regular property
       else {
+        if (typeof current !== 'object' || current === null) {
+          logger.debug(`Expected object but got ${typeof current} for path: ${path}`);
+          return undefined;
+        }
         current = current[part];
       }
     }
