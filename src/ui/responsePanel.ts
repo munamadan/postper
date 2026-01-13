@@ -2,11 +2,13 @@ import * as vscode from 'vscode';
 import { HttpResponse } from '../types/common';
 import { logger } from '../utils/logger';
 import { responseFormatter } from '../utils/formatter';
+import { WEBVIEW_OPTIONS } from '../utils/constants';
 
 export class ResponsePanel {
   private panel: vscode.WebviewPanel | undefined;
   private readonly viewType = 'httpClientResponse';
   private readonly viewTitle = 'HTTP Response';
+  private currentRequestId: string | null = null;
 
   show(column: vscode.ViewColumn = vscode.ViewColumn.Beside): void {
     if (this.panel) {
@@ -14,13 +16,16 @@ export class ResponsePanel {
       return;
     }
 
-    this.panel = vscode.window.createWebviewPanel(this.viewType, this.viewTitle, column, {
-      enableScripts: true,
-      retainContextWhenHidden: true,
-    });
+    this.panel = vscode.window.createWebviewPanel(
+      this.viewType,
+      this.viewTitle,
+      column,
+      WEBVIEW_OPTIONS
+    );
 
     this.panel.onDidDispose(() => {
       this.panel = undefined;
+      this.currentRequestId = null;
       logger.debug('Response panel disposed');
     });
 
@@ -28,24 +33,37 @@ export class ResponsePanel {
   }
 
   displayResponse(response: HttpResponse): void {
+    if (this.currentRequestId && this.currentRequestId !== response.requestId) {
+      logger.info(
+        `Ignoring stale response ${response.requestId}, expecting ${this.currentRequestId}`
+      );
+      return;
+    }
+
     if (!this.panel) {
       this.show();
     }
 
+    this.currentRequestId = response.requestId;
     const html = this.getResponseHtml(response);
     this.panel!.webview.html = html;
     this.panel!.reveal();
   }
 
-  displayLoading(): void {
+  displayLoading(requestId: string): void {
     if (!this.panel) {
       this.show();
     }
 
+    this.currentRequestId = requestId;
     this.panel!.webview.html = this.getLoadingHtml();
   }
 
-  displayError(message: string): void {
+  displayError(message: string, requestId?: string): void {
+    if (requestId) {
+      this.currentRequestId = requestId;
+    }
+
     if (!this.panel) {
       this.show();
     }
@@ -68,10 +86,10 @@ export class ResponsePanel {
         </head>
         <body>
           <div class="placeholder">
-            <div class="icon">🌐</div>
+            <div class="icon">Network</div>
             <h2>HTTP Client</h2>
             <p>No response yet</p>
-            <p class="hint">Send a request to see the response here</p>
+            <p class="hint">Send a request to see response here</p>
           </div>
         </body>
       </html>
@@ -108,7 +126,7 @@ export class ResponsePanel {
         </head>
         <body>
           <div class="error-container">
-            <div class="error-icon">⚠️</div>
+            <div class="error-icon">Error</div>
             <h3>Error</h3>
             <p class="error-message">${this.escapeHtml(message)}</p>
           </div>
@@ -122,7 +140,6 @@ export class ResponsePanel {
     const contentType = response.headers.get('content-type') || 'text/plain';
     const bodyText = response.body.toString('utf-8');
 
-    // Detect and format body
     const formatType = responseFormatter.detectContentType(contentType);
     const formattedBody = responseFormatter.format(bodyText, formatType);
     const { text: displayBody, truncated } = responseFormatter.truncate(formattedBody);
@@ -139,7 +156,7 @@ export class ResponsePanel {
       .join('');
 
     const truncationWarning = truncated
-      ? '<div class="warning">⚠️ Response body truncated (too large to display)</div>'
+      ? '<div class="warning">Response body truncated (too large to display)</div>'
       : '';
 
     return `
@@ -153,7 +170,6 @@ export class ResponsePanel {
         </head>
         <body>
           <div class="response-container">
-            <!-- Status Line -->
             <div class="status-line" style="border-left: 4px solid ${statusColor};">
               <span class="status-code" style="color: ${statusColor};">
                 ${response.statusCode}
@@ -164,32 +180,29 @@ export class ResponsePanel {
 
             ${response.error ? this.getErrorSection(response.error) : ''}
 
-            <!-- Headers Section -->
             <div class="section">
               <div class="section-header">
                 <h3>Headers</h3>
-                <button onclick="copyHeaders()" class="copy-btn">📋 Copy</button>
+                <button onclick="copyHeaders()" class="copy-btn">Copy</button>
               </div>
               <table class="headers-table" id="headers">
                 ${headers}
               </table>
             </div>
 
-            <!-- Body Section -->
             <div class="section">
               <div class="section-header">
                 <h3>Body</h3>
                 <div class="body-controls">
                   <span class="body-size">${response.body.length} bytes</span>
                   <span class="body-type">${formatType.toUpperCase()}</span>
-                  <button onclick="copyBody()" class="copy-btn">📋 Copy</button>
+                  <button onclick="copyBody()" class="copy-btn">Copy</button>
                 </div>
               </div>
               ${truncationWarning}
               <pre class="body-content" id="body">${this.escapeHtml(displayBody)}</pre>
             </div>
 
-            <!-- Timing Section -->
             <div class="section timing-section">
               <h3>Timing</h3>
               <div class="timing-item">
@@ -206,22 +219,30 @@ export class ResponsePanel {
   private getErrorSection(error: any): string {
     return `
       <div class="error-section">
-        <div class="error-title">❌ Request Failed</div>
+        <div class="error-title">Request Failed</div>
         <div class="error-details">
           <div><strong>Code:</strong> ${this.escapeHtml(error.code)}</div>
           <div><strong>Message:</strong> ${this.escapeHtml(error.userMessage)}</div>
-          ${error.retryable ? '<div class="retry-hint">💡 This error might be temporary. Try again.</div>' : ''}
+          ${error.retryable ? '<div class="retry-hint">This error might be temporary. Try again.</div>' : ''}
         </div>
       </div>
     `;
   }
 
   private getStatusColor(statusCode: number): string {
-    if (statusCode < 200) return '#2196F3'; // Blue
-    if (statusCode < 300) return '#4CAF50'; // Green
-    if (statusCode < 400) return '#2196F3'; // Blue
-    if (statusCode < 500) return '#FF9800'; // Orange
-    return '#F44336'; // Red
+    if (statusCode < 200) {
+      return '#2196F3';
+    }
+    if (statusCode < 300) {
+      return '#4CAF50';
+    }
+    if (statusCode < 400) {
+      return '#2196F3';
+    }
+    if (statusCode < 500) {
+      return '#FF9800';
+    }
+    return '#F44336';
   }
 
   private getBaseStyles(): string {
